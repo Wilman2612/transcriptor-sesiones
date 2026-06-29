@@ -48,8 +48,9 @@ export function GlossaryPage() {
           <p className="desk__eyebrow">Configuración</p>
           <h1 className="desk__title">Glosario del consejo</h1>
           <p className="desk__sub">
-            Los nombres y términos que se repiten en las sesiones. Ayudan a la IA a
-            transcribirlos bien y a sugerir correcciones.
+            Añade <strong>solo lo que la IA suele equivocar</strong>: nombres propios (del
+            consejo, lugares) y jerga poco común. Las palabras corrientes ya las transcribe
+            bien y no hace falta ponerlas.
           </p>
         </div>
       </div>
