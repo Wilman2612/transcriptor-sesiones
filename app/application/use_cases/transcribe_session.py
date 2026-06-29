@@ -5,6 +5,7 @@ import json
 
 from sqlalchemy.orm import Session as DbSession
 
+from app.application.use_cases.glossary_prompt import glossary_initial_prompt
 from app.domain.entities import JobStatus, SessionStatus
 from app.infrastructure.diarization.speaker_aligner import S24SpeakerAligner
 from app.infrastructure.persistence.repositories import (
@@ -30,6 +31,7 @@ def transcribe_session(job_id: int, db: DbSession) -> None:
         chunks = chunk_repo.list_by_session(session.id)
         transcriber = get_transcriber()
         aligner = S24SpeakerAligner()
+        prompt = glossary_initial_prompt(db)  # sesga a Whisper con el glosario
 
         s24_segments = []
         if session.s24_transcript_path:
@@ -40,7 +42,9 @@ def transcribe_session(job_id: int, db: DbSession) -> None:
             progress = 5 + int((i / len(chunks)) * 85)
             job_repo.update(job_id, progress=progress)
 
-            segs = transcriber.transcribe(chunk.path, chunk_offset_ms=chunk.start_ms)
+            segs = transcriber.transcribe(
+                chunk.path, chunk_offset_ms=chunk.start_ms, initial_prompt=prompt
+            )
             all_whisper.extend(segs)
 
         # Alinear hablantes

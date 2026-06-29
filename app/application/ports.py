@@ -26,7 +26,9 @@ class TranscribedSegment:
 
 class TranscriberPort(ABC):
     @abstractmethod
-    def transcribe(self, audio_path: str, chunk_offset_ms: int = 0) -> list[TranscribedSegment]:
+    def transcribe(
+        self, audio_path: str, chunk_offset_ms: int = 0, initial_prompt: str = ""
+    ) -> list[TranscribedSegment]:
         """Transcribe un archivo de audio y devuelve segmentos con confianza."""
 
 

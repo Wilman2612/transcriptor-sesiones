@@ -8,6 +8,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session as DbSession
 
 from app.application.use_cases.correct_word import count_session_doubts_left
+from app.application.use_cases.glossary_prompt import glossary_initial_prompt
 from app.config import settings
 from app.infrastructure.persistence.models import SegmentModel, SessionModel
 from app.infrastructure.transcription.factory import get_transcriber
@@ -42,7 +43,10 @@ def reprocess_segments(db: DbSession, segment_ids: list[int]) -> int:
 
     start_ms = min(s.start_ms for s in segs)
     end_ms = max(s.end_ms for s in segs)
-    words = transcriber.transcribe_region(_session_audio(session), start_ms, end_ms)
+    prompt = glossary_initial_prompt(db)
+    words = transcriber.transcribe_region(
+        _session_audio(session), start_ms, end_ms, initial_prompt=prompt
+    )
 
     # Redistribuir cada palabra al segmento cuyo rango contiene su punto medio
     # (o al más cercano si cae en un hueco).

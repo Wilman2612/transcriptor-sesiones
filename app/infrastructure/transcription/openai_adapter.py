@@ -9,7 +9,9 @@ class OpenAIWhisperAdapter(TranscriberPort):
         import openai
         self.client = openai.OpenAI(api_key=settings.openai_api_key)
 
-    def transcribe(self, audio_path: str, chunk_offset_ms: int = 0) -> list[TranscribedSegment]:
+    def transcribe(
+        self, audio_path: str, chunk_offset_ms: int = 0, initial_prompt: str = ""
+    ) -> list[TranscribedSegment]:
         with open(audio_path, "rb") as f:
             response = self.client.audio.transcriptions.create(
                 model="whisper-1",
@@ -17,6 +19,7 @@ class OpenAIWhisperAdapter(TranscriberPort):
                 language=settings.whisper_language,
                 response_format="verbose_json",
                 timestamp_granularities=["segment"],
+                prompt=initial_prompt or "",
             )
 
         result = []

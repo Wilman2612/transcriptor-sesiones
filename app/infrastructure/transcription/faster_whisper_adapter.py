@@ -65,9 +65,12 @@ class FasterWhisperAdapter(TranscriberPort):
                     raise
         return self._model
 
-    def transcribe(self, audio_path: str, chunk_offset_ms: int = 0) -> list[TranscribedSegment]:
+    def transcribe(
+        self, audio_path: str, chunk_offset_ms: int = 0, initial_prompt: str = ""
+    ) -> list[TranscribedSegment]:
         model = self._get_model()
-        segments_iter, _ = model.transcribe(audio_path, **DECODE_PARAMS)
+        params = {**DECODE_PARAMS, "initial_prompt": initial_prompt or None}
+        segments_iter, _ = model.transcribe(audio_path, **params)
 
         result = []
         for seg in segments_iter:
@@ -86,7 +89,9 @@ class FasterWhisperAdapter(TranscriberPort):
             )
         return result
 
-    def transcribe_region(self, audio_path: str, start_ms: int, end_ms: int) -> list[TranscribedWord]:
+    def transcribe_region(
+        self, audio_path: str, start_ms: int, end_ms: int, initial_prompt: str = ""
+    ) -> list[TranscribedWord]:
         """Segunda pasada: re-transcribe SOLO el tramo [start_ms, end_ms] en
         aislamiento (resetea el contexto que causó la alucinación) y devuelve
         las palabras con tiempos absolutos de la sesión."""
@@ -99,7 +104,8 @@ class FasterWhisperAdapter(TranscriberPort):
                  "-i", audio_path, "-ar", "16000", "-ac", "1", tmp.name],
                 capture_output=True, check=True,
             )
-            segments_iter, _ = model.transcribe(tmp.name, **DECODE_PARAMS)
+            params = {**DECODE_PARAMS, "initial_prompt": initial_prompt or None}
+            segments_iter, _ = model.transcribe(tmp.name, **params)
             words: list[TranscribedWord] = []
             for seg in segments_iter:
                 words.extend(_word(w, start_ms) for w in (seg.words or []))

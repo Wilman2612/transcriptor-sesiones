@@ -257,16 +257,10 @@ def delete_glossary(term_id: int, db: DbSession = Depends(get_db)):
 @router.get("/glossary/prompt")
 def glossary_prompt(db: DbSession = Depends(get_db)):
     """Prompt de sesgo que se le pasaría a Whisper + tokens estimados vs límite."""
-    from app.infrastructure.transcription.biasing import (
-        PROMPT_TOKEN_LIMIT,
-        build_initial_prompt,
-        estimate_tokens,
-    )
+    from app.application.use_cases.glossary_prompt import glossary_initial_prompt
+    from app.infrastructure.transcription.biasing import PROMPT_TOKEN_LIMIT, estimate_tokens
 
-    rows = db.query(GlossaryTermModel).all()
-    personas = [r.text for r in rows if r.kind == "persona"]
-    terminos = [r.text for r in rows if r.kind == "termino"]
-    prompt = build_initial_prompt(personas, terminos)
+    prompt = glossary_initial_prompt(db)
     return {"prompt": prompt, "tokens": estimate_tokens(prompt), "limit": PROMPT_TOKEN_LIMIT}
 
 
