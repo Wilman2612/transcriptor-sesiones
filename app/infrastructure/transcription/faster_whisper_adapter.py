@@ -55,12 +55,17 @@ class FasterWhisperAdapter(TranscriberPort):
         if self._model is None:
             from faster_whisper import WhisperModel
             device, compute_type = _detect_device()
+            root = settings.models_dir  # misma carpeta que usó el instalador
             try:
-                self._model = WhisperModel(settings.whisper_model, device=device, compute_type=compute_type)
+                self._model = WhisperModel(
+                    settings.whisper_model, device=device, compute_type=compute_type, download_root=root
+                )
             except Exception as e:
                 if device == "cuda":
                     print(f"[WARN] GPU no disponible ({e}), usando CPU...")
-                    self._model = WhisperModel(settings.whisper_model, device="cpu", compute_type="int8")
+                    self._model = WhisperModel(
+                        settings.whisper_model, device="cpu", compute_type="int8", download_root=root
+                    )
                 else:
                     raise
         return self._model

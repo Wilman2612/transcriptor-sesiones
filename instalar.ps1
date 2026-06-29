@@ -233,41 +233,58 @@ function Confirm-Frontend($base) {
 
 # ── Descargar modelo Whisper ──────────────────────────────────────────────────
 
-function Invoke-ModelDownload($scripts, $model) {
-    Show-Info "Descargando modelo '$model' ($(Get-ModelSize $model)) - esto ocurre una sola vez..."
-    $script = "from faster_whisper import WhisperModel; WhisperModel('$model', device='cpu', compute_type='int8'); print('OK')"
-    $tmp = [System.IO.Path]::GetTempFileName() -replace "\.tmp$", ".py"
-    [System.IO.File]::WriteAllText($tmp, $script)
+function Invoke-ModelDownload($scripts, $model, $dataDir) {
+    $modelsDir = (Join-Path $dataDir "models") -replace "\\", "/"
+    Show-Info "Preparando modelo '$model' ($(Get-ModelSize $model)) - una sola vez."
+    Show-Info "Se guarda en tus datos; si ya estaba, NO se vuelve a descargar."
 
-    $proc = Start-Process "$scripts\python" -ArgumentList $tmp -NoNewWindow -PassThru
+    # El script registra las DLLs de NVIDIA en el PATH (igual que app/main.py) ANTES
+    # de importar faster_whisper/ctranslate2; si no, el import falla en Windows.
+    # download_root = la MISMA carpeta que usa la app, para no re-descargar.
+    $py = @"
+import os, glob, sys
+venv = os.path.dirname(os.path.dirname(sys.executable))
+for b in glob.glob(os.path.join(venv, 'Lib', 'site-packages', 'nvidia', '*', 'bin')):
+    os.environ['PATH'] = b + os.pathsep + os.environ.get('PATH', '')
+    try:
+        os.add_dll_directory(b)
+    except Exception:
+        pass
+from faster_whisper import WhisperModel
+WhisperModel('$model', device='cpu', compute_type='int8', download_root=r'$modelsDir')
+print('OK')
+"@
+    $tmp = [System.IO.Path]::GetTempFileName() -replace "\.tmp$", ".py"
+    [System.IO.File]::WriteAllText($tmp, $py)
+
+    $proc = Start-Process "$scripts\python.exe" -ArgumentList $tmp -NoNewWindow -PassThru `
+        -RedirectStandardError "$script:LOG.model.err"
     $dots = 0
     while (-not $proc.HasExited) {
         Start-Sleep -Seconds 3
         $dots++
         $pct = [math]::Min(95, $dots * 3)
-        Write-Host "`r       Descargando... $pct%   " -NoNewline -ForegroundColor DarkCyan
+        Write-Host "`r       Descargando/verificando... $pct%   " -NoNewline -ForegroundColor DarkCyan
     }
     Write-Host ""
     Remove-Item $tmp -ErrorAction SilentlyContinue
 
-    if ($proc.ExitCode -ne 0) { Show-Fail "Error al descargar el modelo. Revisa tu conexion a internet." }
-    Show-OK "Modelo '$model' listo."
+    if ($proc.ExitCode -ne 0) {
+        Get-Content "$script:LOG.model.err" -ErrorAction SilentlyContinue | Add-Content $script:LOG
+        Show-Fail "No se pudo preparar el modelo. Revisa tu conexion a internet. Detalle en: $LOG"
+    }
+    Remove-Item "$script:LOG.model.err" -ErrorAction SilentlyContinue
+    Show-OK "Modelo '$model' listo (en $dataDir\models)."
 }
 
 # ── Configurar .env ───────────────────────────────────────────────────────────
 
-function Set-AppConfig($model, $info) {
+function Set-AppConfig($model, $info, $dataDir) {
     $envPath = Join-Path $BASE ".env"
     if (-not (Test-Path $envPath)) {
         Copy-Item "$BASE\.env.example" $envPath
     }
     $device = if ($info.gpu) { "cuda" } else { "cpu" }
-
-    # Carpeta de datos FUERA del programa, en Documentos: así las sesiones
-    # corregidas sobreviven si el usuario vuelve a copiar/extraer el ZIP.
-    $docs    = [Environment]::GetFolderPath("MyDocuments")
-    $dataDir = Join-Path $docs "Transcriptor Municipal\data"
-    New-Item -ItemType Directory -Force $dataDir | Out-Null
     $dataDirEnv = $dataDir -replace "\\", "/"   # barras normales para el .env
 
     $content = Get-Content $envPath -Raw
@@ -336,6 +353,11 @@ Start-Sleep -Seconds 2
 
 try {
 
+# Carpeta de datos en Documentos (BD + modelo + sesiones), fuera del programa,
+# para que sobreviva si se recopia el ZIP. Una sola vez, reutilizada en todo el flujo.
+$dataDir = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "Transcriptor Municipal\data"
+New-Item -ItemType Directory -Force (Join-Path $dataDir "models") | Out-Null
+
 # Paso 1: Hardware
 Show-Step 1 7 "Analizando tu computadora..."
 $info  = Get-HardwareInfo
@@ -362,7 +384,7 @@ Write-Host ""
 
 # Paso 5: Modelo
 Show-Step 5 7 "Descargando modelo de inteligencia artificial..."
-Invoke-ModelDownload $scripts $model
+Invoke-ModelDownload $scripts $model $dataDir
 Write-Host ""
 
 # Paso 6: Interfaz
@@ -372,7 +394,7 @@ Write-Host ""
 
 # Paso 7: Config y acceso directo
 Show-Step 7 7 "Finalizando..."
-Set-AppConfig $model $info
+Set-AppConfig $model $info $dataDir
 New-AppLauncher
 New-DesktopShortcut
 Write-Host ""
@@ -387,6 +409,8 @@ Write-Host "  > Doble clic en 'Transcriptor Municipal' en el escritorio" -Foregr
 Write-Host "  > O ejecuta INICIAR.bat desde esta carpeta" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "  Modelo: $model  |  RAM: $($info.ram_gb) GB  |  GPU: $(if ($info.gpu) { 'Si' } else { 'No' })" -ForegroundColor DarkGray
+Write-Host "  Tus sesiones y el modelo se guardan en:" -ForegroundColor DarkGray
+Write-Host "  $dataDir" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "  Presiona ENTER para cerrar..." -ForegroundColor DarkGray
 Read-Host | Out-Null

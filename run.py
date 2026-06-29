@@ -17,7 +17,7 @@ def ensure_dirs():
     # si el instalador puso DATA_DIR). mkdir con parents crea también la raíz, así
     # SQLite encuentra el directorio antes de abrir la BD.
     from app.config import settings
-    for d in [settings.uploads_dir, settings.chunks_dir, settings.exports_dir]:
+    for d in [settings.uploads_dir, settings.chunks_dir, settings.exports_dir, settings.models_dir]:
         Path(d).mkdir(parents=True, exist_ok=True)
 
 

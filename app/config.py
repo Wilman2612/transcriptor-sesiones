@@ -47,5 +47,12 @@ class Settings(BaseSettings):
     def exports_dir(self) -> str:
         return str(self.data_path / "exports")
 
+    @property
+    def models_dir(self) -> str:
+        # El modelo de Whisper (1-3 GB) se guarda junto a los datos: así el
+        # instalador y la app miran la MISMA carpeta (no se re-descarga) y
+        # sobrevive si se recopia el programa.
+        return str(self.data_path / "models")
+
 
 settings = Settings()
