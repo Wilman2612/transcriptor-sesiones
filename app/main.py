@@ -60,11 +60,28 @@ app.mount(
     name="static",
 )
 
-from app.interfaces.web.routes import audio, dev_gallery, export, jobs, review, sessions
+from fastapi.middleware.cors import CORSMiddleware
 
+# En desarrollo, el dev server de Vite (5173) llama a /api desde otro origen.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+from app.interfaces.web.routes import api, audio, dev_gallery, export, jobs, review, sessions
+
+app.include_router(api.router)
 app.include_router(sessions.router)
 app.include_router(jobs.router)
 app.include_router(review.router)
 app.include_router(export.router)
 app.include_router(audio.router)
 app.include_router(dev_gallery.router)
+
+# Frontend React compilado (web/dist). El instalador lo compila una vez; el
+# usuario final no necesita Node. Si no está compilado, esta sección se omite.
+_web_dist = Path(__file__).parent.parent / "web" / "dist"
+if _web_dist.exists():
+    app.mount("/app", StaticFiles(directory=str(_web_dist), html=True), name="react-app")
