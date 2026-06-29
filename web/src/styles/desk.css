@@ -325,3 +325,13 @@
 .w--editable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .pop__conf { color: var(--doubt-mid); font-weight: 600; }
+
+/* ── Marca de tiempo intermedia (donde Whisper cortó dentro de un turno) ────── */
+.phrase-time {
+  font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
+  font-size: .66rem; color: var(--ink-faint);
+  background: none; border: 0; cursor: pointer;
+  padding: 0 .15rem; margin: 0 .1rem; border-radius: 3px;
+  vertical-align: .08em; white-space: nowrap;
+}
+.phrase-time:hover { color: var(--accent); background: var(--accent-soft); }

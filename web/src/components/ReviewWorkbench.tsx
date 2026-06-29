@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from "react";
 import type { IReviewRepository } from "../lib/data/IReviewRepository";
 import type { ReviewData, Word as WordT } from "../lib/types";
 import { countDoubts } from "../lib/confidence";
-import { Segment } from "./Segment";
+import { groupIntoTurns } from "../lib/turns";
+import { Turn } from "./Turn";
 import { Tally } from "./Tally";
 import { DoubtPopover } from "./DoubtPopover";
 import { EmptyNote, ResolvedNote } from "./Notes";
@@ -30,6 +31,7 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
   const stopAt = useRef<number | null>(null);
 
   const counts = useMemo(() => countDoubts(review, threshold), [review, threshold]);
+  const turns = useMemo(() => groupIntoTurns(review.segments), [review.segments]);
 
   const playRange = (startMs: number, endMs: number | null) => {
     const a = audioRef.current;
@@ -90,8 +92,8 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
           <p className="desk__eyebrow">Acta de sesión · revisión</p>
           <h1 className="desk__title">{review.name}</h1>
           <p className="desk__sub">
-            {review.total_segments} intervenciones · Haz clic en <strong>cualquier palabra</strong>{" "}
-            para editarla; las marcadas son las de baja confianza.
+            {turns.length} intervenciones · Haz clic en <strong>cualquier palabra</strong> para
+            editarla; las marcadas son las de baja confianza.
           </p>
         </div>
         <Tally doubtsLeft={counts.left} totalDoubts={counts.total} />
@@ -145,10 +147,10 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
       )}
 
       <div className="acta">
-        {review.segments.map((s) => (
-          <Segment
-            key={s.id}
-            segment={s}
+        {turns.map((t) => (
+          <Turn
+            key={t.key}
+            turn={t}
             threshold={threshold}
             onSeek={(ms) => playRange(ms, null)}
             onPickWord={(segmentId, word, rect) => setEditing({ segmentId, word, rect })}
