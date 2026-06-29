@@ -3,13 +3,13 @@
 .venv/
 venv/
 
-# Python
+# Python (solo artefactos de build en la raíz; NO web/dist, que sí se versiona)
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
-dist/
-build/
+/dist/
+/build/
 .pytest_cache/
 .ruff_cache/
 

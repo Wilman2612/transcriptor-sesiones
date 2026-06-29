@@ -97,6 +97,27 @@ function Install-PythonIfMissing {
     return $py.Source
 }
 
+# ── Verificar/instalar ffmpeg (procesa el audio) ──────────────────────────────
+
+function Install-FfmpegIfMissing {
+    if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
+        Show-OK "ffmpeg encontrado."
+        return
+    }
+    Show-Info "Instalando ffmpeg (necesario para procesar el audio) via winget..."
+    try {
+        winget install --id Gyan.FFmpeg -e --accept-source-agreements --accept-package-agreements --silent 2>&1 | Out-Null
+    } catch {
+        Show-Warn "No se pudo instalar ffmpeg. Instalalo desde https://ffmpeg.org y reinicia."
+    }
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
+        Show-OK "ffmpeg instalado."
+    } else {
+        Show-Warn "ffmpeg instalado pero aun no visible. Si falla al transcribir, reinicia la PC."
+    }
+}
+
 # ── Entorno virtual ───────────────────────────────────────────────────────────
 
 function New-VirtualEnv($pyExe) {
@@ -126,26 +147,17 @@ function Install-AppDeps($scripts, $hasGpu) {
     Show-OK "Dependencias instaladas."
 }
 
-# ── Compilar interfaz React (web/dist) ────────────────────────────────────────
+# ── Verificar interfaz React (build versionado en el repo) ────────────────────
 
-function Build-Frontend($base) {
+function Confirm-Frontend($base) {
+    # El build estatico de React (web/dist) viene incluido en el repo, asi que
+    # el usuario final NO necesita Node. Solo verificamos que este presente.
     $dist = Join-Path $base "web\dist\index.html"
     if (Test-Path $dist) {
-        Show-OK "Interfaz ya compilada."
-        return
+        Show-OK "Interfaz lista (build incluido)."
+    } else {
+        Show-Fail "Falta web\dist. Descarga el proyecto completo (no solo el codigo fuente)."
     }
-    $node = Get-Command node -ErrorAction SilentlyContinue
-    if (-not $node) {
-        Show-Warn "Node.js no encontrado: la interfaz nueva no se compilo. Se usara la interfaz web basica."
-        return
-    }
-    Show-Info "Compilando la interfaz (una sola vez, puede tardar 1-2 min)..."
-    Push-Location (Join-Path $base "web")
-    & npm ci 2>&1 | Out-Null
-    & npm run build 2>&1 | Out-Null
-    Pop-Location
-    if (Test-Path $dist) { Show-OK "Interfaz compilada." }
-    else { Show-Warn "No se pudo compilar la interfaz; se usara la web basica." }
 }
 
 # ── Descargar modelo Whisper ──────────────────────────────────────────────────
@@ -261,6 +273,7 @@ Write-Host ""
 # Paso 4: Deps
 Show-Step 4 7 "Instalando librerias..."
 Install-AppDeps $scripts ($null -ne $info.gpu)
+Install-FfmpegIfMissing
 Write-Host ""
 
 # Paso 5: Modelo
@@ -269,8 +282,8 @@ Invoke-ModelDownload $scripts $model
 Write-Host ""
 
 # Paso 6: Interfaz
-Show-Step 6 7 "Preparando la interfaz..."
-Build-Frontend $BASE
+Show-Step 6 7 "Verificando la interfaz..."
+Confirm-Frontend $BASE
 Write-Host ""
 
 # Paso 7: Config y acceso directo

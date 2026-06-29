@@ -8,7 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+# dist NO se ignora: el build estático de React se versiona para que el
+# usuario final no necesite Node (lo sirve FastAPI en /app).
 dist-ssr
 *.local
 

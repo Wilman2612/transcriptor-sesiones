@@ -24,9 +24,7 @@ def run_migrations():
 
 
 def open_browser(port: int):
-    # Si el frontend React está compilado, abrir esa interfaz; si no, la HTML.
-    path = "/app/" if (BASE / "web" / "dist" / "index.html").exists() else "/"
-    webbrowser.open(f"http://localhost:{port}{path}")
+    webbrowser.open(f"http://localhost:{port}/app/")
 
 
 if __name__ == "__main__":

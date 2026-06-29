@@ -27,8 +27,6 @@ def _register_nvidia_dlls() -> None:
 
 
 _register_nvidia_dlls()
-from fastapi.staticfiles import StaticFiles
-
 from app.application.use_cases.ingest_audio import ingest_audio
 from app.application.use_cases.transcribe_session import transcribe_session
 from app.infrastructure.jobs.worker import register_handler, start_worker
@@ -39,7 +37,6 @@ from app.infrastructure.persistence.repositories import SqlJobRepository, SqlSes
 
 def _ensure_columns():
     """Añade columnas nuevas a una DB existente (create_all no altera tablas)."""
-    from sqlalchemy import text
     with engine.begin() as conn:
         cols = {r[1] for r in conn.exec_driver_sql("PRAGMA table_info(segments)")}
         if "override_text" not in cols:
@@ -69,12 +66,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Transcriptor de Sesiones", lifespan=lifespan)
 
-app.mount(
-    "/static",
-    StaticFiles(directory="app/interfaces/web/static"),
-    name="static",
-)
-
 from fastapi.middleware.cors import CORSMiddleware
 
 # En desarrollo, el dev server de Vite (5173) llama a /api desde otro origen.
@@ -85,28 +76,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.interfaces.web.routes import api, audio, dev_gallery, export, jobs, review, sessions
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+
+from app.interfaces.web.routes import api, audio, export
 
 app.include_router(api.router)
-app.include_router(sessions.router)
-app.include_router(jobs.router)
-app.include_router(review.router)
 app.include_router(export.router)
 app.include_router(audio.router)
-app.include_router(dev_gallery.router)
 
-# Frontend React compilado (web/dist). El instalador lo compila una vez; el
-# usuario final no necesita Node. Si no está compilado, esta sección se omite.
-# Como es una SPA, las rutas profundas (/app/sessions/1/review) devuelven
-# index.html para que el router de React resuelva del lado del cliente.
+
+@app.get("/")
+def root():
+    """La única interfaz es la SPA de React, servida en /app."""
+    return RedirectResponse("/app/")
+
+
+# Frontend React compilado (web/dist), versionado en el repo: el usuario final
+# no necesita Node. Como es una SPA, las rutas profundas (/app/sessions/1/review)
+# devuelven index.html para que el router de React resuelva del lado del cliente.
 _web_dist = Path(__file__).parent.parent / "web" / "dist"
-if _web_dist.exists():
-    from fastapi.responses import FileResponse
 
-    @app.get("/app")
-    @app.get("/app/{full_path:path}")
-    def serve_react(full_path: str = ""):
-        candidate = _web_dist / full_path
-        if full_path and candidate.is_file():
-            return FileResponse(str(candidate))
-        return FileResponse(str(_web_dist / "index.html"))
+
+@app.get("/app")
+@app.get("/app/{full_path:path}")
+def serve_react(full_path: str = ""):
+    candidate = _web_dist / full_path
+    if full_path and candidate.is_file():
+        return FileResponse(str(candidate))
+    index = _web_dist / "index.html"
+    if not index.exists():
+        return JSONResponse(
+            {"error": "Interfaz no compilada. Falta web/dist (revisa la instalación)."},
+            status_code=503,
+        )
+    return FileResponse(str(index))

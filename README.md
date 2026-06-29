@@ -1,94 +1,110 @@
-# Municipal Session Transcription Tool
+# Transcriptor de Sesiones Municipales
 
-AI-assisted tool to turn long municipal council recordings into a reviewable, correctable
-transcript — and finally into an official *acta* (minutes) document. Built around a
-**non-technical reviewer** who needs to fix only what the AI got wrong, not retype hours of audio.
+Herramienta asistida por IA para convertir las grabaciones largas de las sesiones de concejo
+en una transcripción que se puede **revisar y corregir fácilmente**, y exportar como **acta**
+en Word. Está pensada para que una persona **sin conocimientos técnicos** solo tenga que
+arreglar lo poco que la IA dudó, en vez de teclear horas de audio.
 
-> Real audio and real council-member names are **never** committed (see [Privacy](#privacy)).
-> Everything in this repo uses fictional sample data.
+> Este repositorio no contiene audio real ni nombres reales: todos los datos de ejemplo son
+> ficticios (ver [Privacidad](#privacidad)).
 
-## The problem
+---
 
-A clerk at the Municipalidad Distrital de Subtanjalla (Peru) records 3–4 hour council
-sessions on a phone and must produce a written *acta*. Manual transcription is slow and
-tedious. Off-the-shelf auto-transcription is ~95% right — but the wrong 5% is exactly the
-hard part: **proper names, surnames and legal terms**.
+## Instalación fácil (Windows)
 
-So the tool doesn't try to be perfect. It transcribes, **measures per-word confidence**, and
-puts the reviewer's eye straight on the doubtful words — leaving the 95% it got right alone.
+No necesitas saber programar. Solo Windows 10/11 y conexión a internet (solo durante la
+instalación). Si tu PC tiene tarjeta gráfica NVIDIA será mucho más rápida, pero no es
+obligatorio.
 
-## What it does
+1. **Descarga el proyecto completo.** En la página de GitHub: botón verde **Code → Download ZIP**
+   (o descarga el ZIP de la última *release* si la hay).
+2. **Descomprime** la carpeta donde quieras (por ejemplo, en *Documentos*).
+3. **Doble clic en `INSTALAR.bat`.** Acepta el aviso de Windows (pide permiso de administrador).
+   El instalador hace todo solo: instala Python, ffmpeg y las librerías, descarga el modelo de
+   IA adecuado a tu PC y crea un acceso directo en el escritorio. La primera vez tarda unos
+   minutos.
+4. **Para usarlo:** doble clic en **«Transcriptor Municipal»** en el escritorio (o en
+   `INICIAR.bat` dentro de la carpeta). Se abre solo en tu navegador.
 
-- **Transcribes** with Whisper (local `faster-whisper` on GPU, or the OpenAI API) behind a
-  single swappable port.
-- **Anti-hallucination decoding** params + a *reprocess-in-isolation* action to recover the
-  garbage stretches that crosstalk produces.
-- **Per-word confidence highlighting** with a live threshold slider — the reviewer decides how
-  picky to be.
-- **Word-style rich editor** (TipTap): edit the text like a document; confidence/time metadata
-  lives in hover, grouped by speaker turn.
-- **Glossary biasing**: council names and error-prone terms are fed to Whisper as an
-  `initial_prompt` (with a live token counter against the prompt limit).
-- **Speaker naming** from the phone's diarization, with a speech sample per speaker.
-- **Bookmark** to resume a long review where you left off.
-- **Export** to a DOCX *acta* in the official format.
+Si algo falla, el instalador te dice qué pasó en lenguaje claro y cómo seguir.
 
-## Architecture
+## Cómo se usa
 
-The point of this project is a clean **hexagonal architecture (ports & adapters)**. The
-dependency rule is strict: it only ever points inward.
+1. **Sube** la grabación de la sesión (y, si la tienes, la transcripción automática del teléfono
+   Samsung con los hablantes).
+2. **Espera** a que la IA transcriba (verás una barra de progreso).
+3. **Revisa**: el texto se lee como un documento de Word. Las palabras que la IA **dudó** salen
+   resaltadas — pasa el cursor para ver el tiempo y la confianza, y corrígelas. Puedes:
+   - mover un control para resaltar más o menos palabras según la confianza,
+   - ponerle nombre a cada hablante de una sola vez,
+   - re-procesar un tramo que salió mal,
+   - dejar un **marcador** para continuar la revisión después.
+4. **Exporta** el acta final en Word.
+
+---
+
+## Para desarrolladores
+
+El objetivo técnico del proyecto es una **arquitectura hexagonal (puertos y adaptadores)**
+limpia. La regla de dependencia es estricta: siempre apunta hacia adentro.
 
 ```
 app/
-  domain/          ← pure entities, no frameworks
-  application/     ← use cases + ports (interfaces). Never imports infrastructure.
-  infrastructure/  ← concrete adapters (Whisper, audio, persistence, jobs)
-  interfaces/web/  ← FastAPI: JSON API (/api) + legacy HTMX/Jinja2
-web/               ← React + TypeScript frontend, decoupled via REST + Storybook
+  domain/          ← entidades puras, sin frameworks
+  application/     ← casos de uso + puertos (interfaces). Nunca importa infrastructure.
+  infrastructure/  ← adaptadores concretos (Whisper, audio, persistencia, jobs)
+  interfaces/web/  ← FastAPI: API JSON en /api + sirve la SPA de React en /app
+web/               ← frontend React + TypeScript, desacoplado por REST + Storybook
 ```
 
-Why it's built this way: the Whisper backend, the speaker aligner and the (planned)
-suggestion engine are all pieces that will change. Isolating them behind interfaces means
-they can be swapped without touching business logic. The React frontend talks to the backend
-only through the REST contract, and every UI state is materialized as a Storybook story
-against a fake adapter — so the UI can be built and reviewed without a running backend.
+El backend de Whisper (local `faster-whisper` o la API de OpenAI), el alineador de hablantes y
+el motor de sugerencias (planeado) están aislados tras interfaces para poder cambiarlos sin
+tocar la lógica de negocio. El frontend habla con el backend **solo** por el contrato REST, y
+cada estado de la UI se materializa como una *story* de Storybook contra un adaptador falso —
+así la UI se construye y se revisa sin backend.
 
-## Tech stack
+**Stack:** Python 3.11+, FastAPI, SQLAlchemy 2.0 + SQLite, faster-whisper / OpenAI, worker de
+fondo en un solo proceso (sin Redis/Celery) · React 19, TypeScript, Vite, TipTap, Storybook.
 
-**Backend**: Python 3.11+, FastAPI, SQLAlchemy 2.0 + SQLite, faster-whisper / OpenAI,
-a background job worker (one process — no Redis/Celery).
-**Frontend**: React 19, TypeScript, Vite, TipTap, Storybook.
+### Arranque en desarrollo
 
-## Getting started
-
-Requires **ffmpeg** on the system. GPU transcription needs a CUDA-capable card (CPU works too,
-slower).
+Requiere **ffmpeg** en el sistema.
 
 ```bash
 # Backend
 pip install -e .
-python run.py            # migrates + serves on http://localhost:8000
+python run.py            # migra + sirve en http://localhost:8000 (abre /app)
 
-# Frontend (separate terminal)
+# Frontend (otra terminal) — solo si vas a tocar la UI
 cd web
 npm install
-npm run dev              # Vite dev server
-npm run storybook        # component gallery on :6006
+npm run dev              # dev server de Vite con recarga en caliente
+npm run storybook        # galería de componentes en :6006
+npm run build            # regenera el build estático (web/dist)
 ```
 
-On Windows, `INSTALAR.bat` / `INICIAR.bat` wrap install and launch for the non-technical user.
+> **Nota:** el build estático de React (`web/dist`) **se versiona en el repo** a propósito, para
+> que el usuario final no necesite Node. Si cambias la UI, recompila con `npm run build` y
+> commitea `web/dist`. FastAPI lo sirve en `/app`.
 
-## Privacy
+---
 
-This is a tool that processes **personal data** (people's voices and names in public-but-sensitive
-council sessions). The repo is built so none of that leaks:
+## Privacidad
 
-- Real audio and the phone's transcript live in `sample/` and `data/` — both **gitignored**.
-- The glossary roster (real council names) lives **only in the local database**, never in code.
-- All fixtures, stories and docs use a **fictional** roster.
+La herramienta procesa **datos personales** (voces y nombres en sesiones de concejo). El repo
+está hecho para que nada de eso se filtre:
 
-## Status
+- El audio real y la transcripción del teléfono viven en `sample/` y `data/`, ambos **ignorados
+  por git**.
+- El listado real de consejeros vive **solo en la base de datos local**, nunca en el código.
+- Todos los *fixtures*, *stories* y documentos usan un roster **ficticio**.
 
-Phases 0–5 are implemented (scaffolding → audio → transcription → speaker alignment → review →
-export). **Phase 6 — automatic suggestions** (learning corrections from history) is designed
-for but not yet built.
+## Estado
+
+Fases 0–5 implementadas (estructura → audio → transcripción → hablantes → revisión → exportar).
+La **fase 6 — sugerencias automáticas** (aprender de las correcciones del historial) está
+diseñada pero aún no construida.
+
+## Licencia
+
+MIT — ver [LICENSE](LICENSE).
