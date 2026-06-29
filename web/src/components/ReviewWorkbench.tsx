@@ -157,6 +157,9 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
             Exportar DOCX
           </a>
         )}
+        <a className="btn" href={`/app/sessions/${review.session_id}/speakers`}>
+          Hablantes
+        </a>
         <a className="btn btn--ghost" href="/app/">
           ← Sesiones
         </a>

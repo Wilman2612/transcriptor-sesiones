@@ -20,3 +20,16 @@ export async function addGlossary(text: string, kind: GlossaryKind): Promise<Glo
 export async function deleteGlossary(id: number): Promise<void> {
   await fetch(`/api/glossary/${id}`, { method: "DELETE" });
 }
+
+export interface PromptInfo {
+  prompt: string;
+  tokens: number;
+  limit: number;
+}
+
+export async function getGlossaryPrompt(): Promise<PromptInfo> {
+  const r = await fetch("/api/glossary/prompt");
+  if (!r.ok) throw new Error("No se pudo calcular el prompt");
+  return r.json();
+}
+

@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { GlossaryKind, GlossaryTerm } from "../lib/types";
-import { addGlossary, deleteGlossary, listGlossary } from "../lib/data/glossary";
+import {
+  addGlossary,
+  deleteGlossary,
+  getGlossaryPrompt,
+  listGlossary,
+  type PromptInfo,
+} from "../lib/data/glossary";
 
 const KIND_LABEL: Record<GlossaryKind, string> = {
   persona: "Personas",
@@ -13,10 +19,16 @@ export function GlossaryPage() {
   const [text, setText] = useState("");
   const [kind, setKind] = useState<GlossaryKind>("persona");
   const [busy, setBusy] = useState(false);
+  const [prompt, setPrompt] = useState<PromptInfo | null>(null);
+
+  const refreshPrompt = useCallback(() => {
+    getGlossaryPrompt().then(setPrompt).catch(() => setPrompt(null));
+  }, []);
 
   useEffect(() => {
     listGlossary().then(setTerms).catch(() => setTerms([]));
-  }, []);
+    refreshPrompt();
+  }, [refreshPrompt]);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +41,7 @@ export function GlossaryPage() {
         prev.some((x) => x.id === created.id) ? prev : [...prev, created],
       );
       setText("");
+      refreshPrompt();
     } finally {
       setBusy(false);
     }
@@ -37,7 +50,11 @@ export function GlossaryPage() {
   const remove = async (id: number) => {
     await deleteGlossary(id);
     setTerms((prev) => prev.filter((t) => t.id !== id));
+    refreshPrompt();
   };
+
+  const pct = prompt ? Math.min(100, Math.round((prompt.tokens / prompt.limit) * 100)) : 0;
+  const tone = pct >= 90 ? "var(--doubt-high)" : pct >= 70 ? "var(--doubt-mid)" : "var(--sealed)";
 
   const byKind = (k: GlossaryKind) => terms.filter((t) => t.kind === k);
 
@@ -83,6 +100,25 @@ export function GlossaryPage() {
           </button>
         </div>
       </form>
+
+      {prompt && (
+        <div className="tokenbar" style={{ maxWidth: 620, marginBottom: "2rem" }}>
+          <div className="tokenbar__head">
+            <span>Prompt de IA (sesga la transcripción de sesiones nuevas)</span>
+            <strong style={{ color: tone }}>
+              {prompt.tokens} / {prompt.limit} tokens
+            </strong>
+          </div>
+          <div className="tokenbar__track">
+            <div className="tokenbar__fill" style={{ width: `${pct}%`, background: tone }} />
+          </div>
+          <p className="tokenbar__hint">
+            {pct >= 90
+              ? "Casi al límite: quita términos que la IA ya transcribe bien."
+              : "Hay espacio. Recuerda: solo añade lo que la IA suele equivocar."}
+          </p>
+        </div>
+      )}
 
       {terms.length === 0 ? (
         <div className="note" style={{ borderStyle: "solid", borderColor: "var(--accent-soft)" }}>

@@ -3,6 +3,7 @@ API JSON (/api) que consume el frontend React. Desacopla la UI del backend:
 reusa los mismos casos de uso y repositorios que la interfaz HTML.
 """
 import json
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -251,3 +252,49 @@ def delete_glossary(term_id: int, db: DbSession = Depends(get_db)):
     if m:
         db.delete(m)
         db.commit()
+
+
+@router.get("/glossary/prompt")
+def glossary_prompt(db: DbSession = Depends(get_db)):
+    """Prompt de sesgo que se le pasaría a Whisper + tokens estimados vs límite."""
+    from app.infrastructure.transcription.biasing import (
+        PROMPT_TOKEN_LIMIT,
+        build_initial_prompt,
+        estimate_tokens,
+    )
+
+    rows = db.query(GlossaryTermModel).all()
+    personas = [r.text for r in rows if r.kind == "persona"]
+    terminos = [r.text for r in rows if r.kind == "termino"]
+    prompt = build_initial_prompt(personas, terminos)
+    return {"prompt": prompt, "tokens": estimate_tokens(prompt), "limit": PROMPT_TOKEN_LIMIT}
+
+
+@router.get("/sessions/{session_id}/speakers")
+def session_speakers(session_id: int, db: DbSession = Depends(get_db)):
+    """Cada hablante de la sesión con su nombre asignado y una muestra (su
+    intervención más larga) para poder identificarlo de un vistazo."""
+    m = db.get(SessionModel, session_id)
+    if not m:
+        raise HTTPException(404, "Sesión no encontrada")
+    names = json.loads(m.speaker_names_json) if m.speaker_names_json else {}
+
+    segments = db.query(SegmentModel).filter_by(session_id=session_id).all()
+    longest: dict[str, str] = {}
+    order: list[str] = []
+    for s in segments:
+        if s.speaker not in longest:
+            order.append(s.speaker)
+        text = (s.override_text or s.original_text or "").strip()
+        if len(text) > len(longest.get(s.speaker, "")):
+            longest[s.speaker] = text
+
+    def sort_key(k: str):
+        mt = re.search(r"(\d+)", k)
+        return int(mt.group(1)) if mt else 999
+    order.sort(key=sort_key)
+
+    return [
+        {"key": k, "name": names.get(k, ""), "sample": longest.get(k, "")[:240]}
+        for k in order
+    ]

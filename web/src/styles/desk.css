@@ -429,3 +429,20 @@
   width: 11rem; max-width: 100%;
 }
 .speaker-edit__input:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ── Contador de tokens del glosario ──────────────────────────────────────────── */
+.tokenbar { background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: .9rem 1rem; }
+.tokenbar__head { display: flex; justify-content: space-between; font-family: 'Inter', sans-serif; font-size: .85rem; color: var(--ink); margin-bottom: .4rem; }
+.tokenbar__track { height: 8px; background: var(--paper-edge); border-radius: 99px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--rule); }
+.tokenbar__fill { height: 100%; border-radius: 99px; transition: width .3s; }
+.tokenbar__hint { font-size: .76rem; color: var(--ink-soft); margin: .4rem 0 0; }
+
+/* ── Sección de hablantes ─────────────────────────────────────────────────────── */
+.speakers { display: flex; flex-direction: column; gap: .8rem; }
+.speaker-row { display: grid; grid-template-columns: 120px 1fr 90px; gap: 1rem; align-items: start; padding: .9rem 0; border-top: 1px solid var(--rule); }
+.speaker-row__id { font-family: 'Inter', sans-serif; font-weight: 600; font-size: .85rem; color: var(--ink); padding-top: .5rem; }
+.speaker-row__body { display: flex; flex-direction: column; gap: .45rem; }
+.speaker-row__body .field__input { max-width: 360px; }
+.speaker-row__sample { font-family: 'Spectral', Georgia, serif; font-size: 1rem; color: var(--ink-soft); margin: 0; line-height: 1.5; }
+.speaker-row__state { font-size: .76rem; color: var(--sealed); padding-top: .6rem; }
+@media (max-width: 720px) { .speaker-row { grid-template-columns: 1fr; gap: .4rem; } }

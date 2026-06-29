@@ -4,6 +4,7 @@ import { UploadPage } from "./pages/UploadPage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { ReviewPage } from "./pages/ReviewPage";
 import { GlossaryPage } from "./pages/GlossaryPage";
+import { SpeakersPage } from "./pages/SpeakersPage";
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/sessions/:id/progress" element={<ProgressPage />} />
           <Route path="/sessions/:id/review" element={<ReviewPage />} />
+          <Route path="/sessions/:id/speakers" element={<SpeakersPage />} />
           <Route path="/glossary" element={<GlossaryPage />} />
         </Routes>
       </main>
