@@ -3,6 +3,23 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference    = "SilentlyContinue"
 
 $BASE = Split-Path -Parent $MyInvocation.MyCommand.Path
+$LOG  = Join-Path $BASE "instalacion.log"
+
+function Invoke-Native {
+    # Ejecuta un programa nativo (pip, winget, python) SIN que su stderr —que para
+    # pip son avisos normales— tumbe el script bajo ErrorActionPreference=Stop
+    # (PS 5.1 envuelve stderr nativo en un error terminante). Guarda toda la salida
+    # en el log y devuelve el codigo de salida REAL para decidir si fallo de verdad.
+    param([Parameter(Mandatory)][string]$Exe, [string[]]$Arguments = @())
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $Exe @Arguments *>> $script:LOG
+        return $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+}
 
 # ── Helpers visuales (solo ASCII para compatibilidad con PS 5.1) ──────────────
 
@@ -127,11 +144,7 @@ function Install-PythonIfMissing {
     }
 
     Show-Info "Instalando Python 3.12 (puede tardar 1-2 min)..."
-    try {
-        winget install --id Python.Python.3.12 -e --source winget --accept-source-agreements --accept-package-agreements --silent 2>&1 | Out-Null
-    } catch {
-        Show-Fail "No se pudo instalar Python automaticamente. Descargalo de https://www.python.org/downloads/ e intenta de nuevo."
-    }
+    $null = Invoke-Native "winget" @("install", "--id", "Python.Python.3.12", "-e", "--source", "winget", "--accept-source-agreements", "--accept-package-agreements", "--silent")
 
     # Refrescar PATH y re-buscar escaneando las rutas reales (no solo el PATH).
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
@@ -151,11 +164,7 @@ function Install-FfmpegIfMissing {
         return
     }
     Show-Info "Instalando ffmpeg (necesario para procesar el audio) via winget..."
-    try {
-        winget install --id Gyan.FFmpeg -e --accept-source-agreements --accept-package-agreements --silent 2>&1 | Out-Null
-    } catch {
-        Show-Warn "No se pudo instalar ffmpeg. Instalalo desde https://ffmpeg.org y reinicia."
-    }
+    $null = Invoke-Native "winget" @("install", "--id", "Gyan.FFmpeg", "-e", "--accept-source-agreements", "--accept-package-agreements", "--silent")
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
         Show-OK "ffmpeg instalado."
@@ -170,7 +179,9 @@ function New-VirtualEnv($pyExe) {
     $venv = Join-Path $BASE ".venv"
     if (-not (Test-Path "$venv\Scripts\python.exe")) {
         Show-Info "Creando entorno virtual..."
-        & $pyExe -m venv $venv 2>&1 | Out-Null
+        if ((Invoke-Native $pyExe @("-m", "venv", $venv)) -ne 0) {
+            Show-Fail "No se pudo crear el entorno virtual. Detalle en: $LOG"
+        }
         Show-OK "Entorno virtual creado."
     } else {
         Show-OK "Entorno virtual ya existe."
@@ -182,13 +193,16 @@ function New-VirtualEnv($pyExe) {
 
 function Install-AppDeps($scripts, $hasGpu) {
     Show-Info "Instalando dependencias (puede tardar 2-5 min la primera vez)..."
-    & "$scripts\pip" install --upgrade pip --quiet 2>&1 | Out-Null
-    & "$scripts\pip" install -e "$BASE\.[dev]" --quiet 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Show-Fail "Error al instalar dependencias. Revisa tu conexion a internet." }
+    $py = "$scripts\python.exe"
+    $null = Invoke-Native $py @("-m", "pip", "install", "--upgrade", "pip")
+    $code = Invoke-Native $py @("-m", "pip", "install", "-e", "$BASE\.[dev]")
+    if ($code -ne 0) {
+        Show-Fail "Error al instalar dependencias (codigo $code). Revisa tu conexion a internet. Detalle completo en: $LOG"
+    }
 
     if ($hasGpu) {
         Show-Info "GPU NVIDIA detectada - instalando soporte CUDA..."
-        & "$scripts\pip" install ctranslate2 --extra-index-url https://download.pytorch.org/whl/cu121 --quiet 2>&1 | Out-Null
+        $null = Invoke-Native $py @("-m", "pip", "install", "ctranslate2", "--extra-index-url", "https://download.pytorch.org/whl/cu121")
     }
     Show-OK "Dependencias instaladas."
 }
@@ -305,10 +319,9 @@ Show-Header
 
 Write-Host "  Este instalador configurara todo lo necesario para usar" -ForegroundColor White
 Write-Host "  el Transcriptor de Sesiones de Consejo Municipal." -ForegroundColor White
-Write-Host "  Solo necesitas conexion a internet." -ForegroundColor DarkGray
+Write-Host "  Solo necesitas conexion a internet. Comenzando..." -ForegroundColor DarkGray
 Write-Host ""
-Write-Host "  Presiona ENTER para comenzar..." -ForegroundColor Yellow
-Read-Host | Out-Null
+Start-Sleep -Seconds 2
 
 Show-Header
 

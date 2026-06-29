@@ -26,3 +26,6 @@ sample/
 screenshots/
 .playwright-cli/
 /*.png
+
+# Log del instalador (se genera en la carpeta del programa)
+instalacion.log
