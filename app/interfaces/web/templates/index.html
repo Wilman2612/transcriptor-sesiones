@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Sesiones — Transcriptor{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Sesiones de consejo</h1>
+  <p>Selecciona una sesión para revisarla o sube una nueva.</p>
+</hgroup>
+
+{% if sessions %}
+<figure>
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in sessions %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td>{{ s.date.strftime('%d/%m/%Y') }}</td>
+        <td>
+          <span class="badge-{{ s.status.value }}">{{ s.status.value }}</span>
+        </td>
+        <td>
+          {% if s.status.value in ('transcribed', 'reviewing', 'done') %}
+            <a href="/sessions/{{ s.id }}/review" role="button" class="outline">Revisar</a>
+          {% elif s.status.value in ('pending', 'processing') %}
+            <a href="/sessions/{{ s.id }}/progress" role="button" class="outline secondary">Ver progreso</a>
+          {% elif s.status.value == 'error' %}
+            <span class="text-error">Error</span>
+          {% endif %}
+          {% if s.status.value in ('transcribed', 'reviewing', 'done') %}
+            <a href="/sessions/{{ s.id }}/export/docx" class="outline contrast">⬇ DOCX</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</figure>
+{% else %}
+<article>
+  <p>No hay sesiones aún. <a href="/upload">Sube la primera grabación.</a></p>
+</article>
+{% endif %}
+
+<a href="/upload" role="button">+ Nueva sesión</a>
+{% endblock %}

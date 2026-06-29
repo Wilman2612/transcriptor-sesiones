@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Nueva sesión{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Nueva sesión de consejo</h1>
+  <p>Sube la grabación. El proceso puede tomar varios minutos dependiendo del largo del audio.</p>
+</hgroup>
+
+<form method="post" action="/upload" enctype="multipart/form-data">
+  <label>
+    Nombre de la sesión
+    <input type="text" name="name" placeholder="Ej: Sesión ordinaria junio 2026" required />
+  </label>
+
+  <label>
+    Fecha de la sesión
+    <input type="date" name="session_date" required />
+  </label>
+
+  <label>
+    Archivo de audio (m4a, mp3, wav, ogg…)
+    <input type="file" name="audio_file" accept="audio/*" required />
+  </label>
+
+  <label>
+    Transcripción del Samsung S24 <small>(opcional — para identificar hablantes)</small>
+    <input type="file" name="s24_file" accept=".txt,.text" />
+  </label>
+
+  <button type="submit">Subir y procesar</button>
+  <a href="/" role="button" class="outline secondary">Cancelar</a>
+</form>
+{% endblock %}

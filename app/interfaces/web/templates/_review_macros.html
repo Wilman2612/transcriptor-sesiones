@@ -1,0 +1,39 @@
+{# Componente reutilizable: un segmento del acta con sus palabras marcadas.
+   Lo usan tanto la página real (review.html) como la galería de estados. #}
+
+{% macro segment(seg) %}
+<article class="seg{% if seg.had_doubts and seg.doubts_left == 0 %} is-resolved{% endif %}"
+         id="seg-{{ seg.id }}" data-seg-id="{{ seg.id }}" data-doubts="{{ seg.doubts_left }}">
+  <div class="seg__meta">
+    <button class="seg__time" type="button" data-ms="{{ seg.start_ms }}">▸ {{ seg.start_ms | ms_to_str }}</button>
+    <span class="seg__speaker"><span class="seg__speaker-glyph"></span>{{ seg.speaker }}</span>
+  </div>
+  <p class="seg__text">{% for w in seg.rwords %}{% if not loop.first %} {% endif %}{% if w.kind == 'plain' %}<span class="w">{{ w.text }}</span>{% elif w.kind == 'sealed' %}<span class="w w--sealed" data-idx="{{ w.idx }}">{{ w.text }}</span>{% else %}<span class="w w--doubt{% if w.kind == 'doubt-high' %} w--high{% endif %}" data-idx="{{ w.idx }}" data-start="{{ w.start_ms }}" data-end="{{ w.end_ms }}" tabindex="0" aria-label="Palabra dudosa: {{ w.text }}. Pulsa para revisar.">{{ w.text }}</span>{% endif %}{% endfor %}</p>
+</article>
+{% endmacro %}
+
+
+{% macro tally(doubts_left, total_doubts) %}
+{% set done = total_doubts - doubts_left %}
+<div class="tally">
+  <div class="tally__count{% if doubts_left == 0 %} is-clear{% endif %}" data-doubts-left>{{ doubts_left }}</div>
+  <div class="tally__label">
+    {% if total_doubts == 0 %}sin dudas que revisar
+    {% elif doubts_left == 0 %}todas las dudas resueltas
+    {% else %}dudas por revisar{% endif %}
+  </div>
+  {% if total_doubts > 0 %}
+  <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="{{ total_doubts }}"
+       aria-valuenow="{{ done }}" aria-label="Dudas resueltas">
+    <div class="meter__track">
+      <div class="meter__fill" data-meter-fill style="width: {{ (done / total_doubts * 100) | round }}%"></div>
+    </div>
+    <div class="meter__caption"><span data-meter-done>{{ done }}</span> de {{ total_doubts }} resueltas</div>
+  </div>
+  <div class="legend" aria-hidden="true">
+    <span class="legend__item"><span class="legend__chip legend__chip--mid"></span>dudosa</span>
+    <span class="legend__item"><span class="legend__chip legend__chip--high"></span>muy dudosa</span>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}

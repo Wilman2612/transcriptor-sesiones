@@ -1,0 +1,28 @@
+# Entorno y secretos
+.env
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Datos de la app (audio, chunks, base de datos, exports) — pesados y/o con PII
+data/uploads/
+data/chunks/
+data/exports/
+data/*.db
+
+# Muestras: audio real de sesiones + transcripcion con nombres reales (PII). No subir.
+sample/
+
+# Artefactos de revision / herramientas (regenerables)
+screenshots/
+.playwright-cli/
+/*.png
