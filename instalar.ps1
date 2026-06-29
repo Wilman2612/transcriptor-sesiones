@@ -235,14 +235,15 @@ function Confirm-Frontend($base) {
 
 function Invoke-ModelDownload($scripts, $model, $dataDir) {
     $modelsDir = (Join-Path $dataDir "models") -replace "\\", "/"
-    Show-Info "Preparando modelo '$model' ($(Get-ModelSize $model)) - una sola vez."
-    Show-Info "Se guarda en tus datos; si ya estaba, NO se vuelve a descargar."
+    Show-Info "Preparando modelo '$model' ($(Get-ModelSize $model)). Si ya estaba, NO se re-descarga."
+    Show-Info "Veras el avance real abajo (puede tardar varios minutos la 1a vez):"
+    Write-Host ""
 
-    # El script registra las DLLs de NVIDIA en el PATH (igual que app/main.py) ANTES
-    # de importar faster_whisper/ctranslate2; si no, el import falla en Windows.
-    # download_root = la MISMA carpeta que usa la app, para no re-descargar.
+    # Registra las DLLs de NVIDIA en el PATH (igual que app/main.py) ANTES de importar
+    # faster_whisper/ctranslate2; si no, el import falla en Windows. download_root = la
+    # MISMA carpeta que usa la app. tqdm muestra el progreso real de la descarga.
     $py = @"
-import os, glob, sys
+import os, glob, sys, time
 venv = os.path.dirname(os.path.dirname(sys.executable))
 for b in glob.glob(os.path.join(venv, 'Lib', 'site-packages', 'nvidia', '*', 'bin')):
     os.environ['PATH'] = b + os.pathsep + os.environ.get('PATH', '')
@@ -250,30 +251,40 @@ for b in glob.glob(os.path.join(venv, 'Lib', 'site-packages', 'nvidia', '*', 'bi
         os.add_dll_directory(b)
     except Exception:
         pass
+# Descargas grandes sin token se cortan por limite de tasa: timeout amplio + reintentos.
+# HuggingFace REANUDA descargas parciales, asi que cada intento continua donde quedo.
+os.environ.setdefault('HF_HUB_DOWNLOAD_TIMEOUT', '60')
 from faster_whisper import WhisperModel
-WhisperModel('$model', device='cpu', compute_type='int8', download_root=r'$modelsDir')
-print('OK')
+last = None
+for intento in range(1, 6):
+    try:
+        WhisperModel('$model', device='cpu', compute_type='int8', download_root=r'$modelsDir')
+        print('MODELO_LISTO')
+        sys.exit(0)
+    except Exception as e:
+        last = e
+        print('\n[Intento %d/5 fallo: %s] reanudando en 5s...' % (intento, e))
+        time.sleep(5)
+import traceback
+print('FALLO TRAS 5 INTENTOS:', last)
+sys.exit(1)
 "@
     $tmp = [System.IO.Path]::GetTempFileName() -replace "\.tmp$", ".py"
     [System.IO.File]::WriteAllText($tmp, $py)
 
-    $proc = Start-Process "$scripts\python.exe" -ArgumentList $tmp -NoNewWindow -PassThru `
-        -RedirectStandardError "$script:LOG.model.err"
-    $dots = 0
-    while (-not $proc.HasExited) {
-        Start-Sleep -Seconds 3
-        $dots++
-        $pct = [math]::Min(95, $dots * 3)
-        Write-Host "`r       Descargando/verificando... $pct%   " -NoNewline -ForegroundColor DarkCyan
-    }
-    Write-Host ""
+    # Salida EN VIVO (progreso real + cualquier error visible). EAP=Continue para que
+    # el stderr de la descarga (tqdm/avisos) no tumbe el script bajo Stop.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & "$scripts\python.exe" $tmp
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = $prev
     Remove-Item $tmp -ErrorAction SilentlyContinue
 
-    if ($proc.ExitCode -ne 0) {
-        Get-Content "$script:LOG.model.err" -ErrorAction SilentlyContinue | Add-Content $script:LOG
-        Show-Fail "No se pudo preparar el modelo. Revisa tu conexion a internet. Detalle en: $LOG"
+    Write-Host ""
+    if ($code -ne 0) {
+        Show-Fail "No se pudo preparar el modelo (codigo $code). Mira el error de arriba (suele ser internet o falta de espacio en disco)."
     }
-    Remove-Item "$script:LOG.model.err" -ErrorAction SilentlyContinue
     Show-OK "Modelo '$model' listo (en $dataDir\models)."
 }
 
