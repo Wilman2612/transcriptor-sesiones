@@ -21,6 +21,7 @@ export function countDoubts(review: ReviewData, threshold: number) {
   let left = 0;
   let resolved = 0;
   for (const s of review.segments) {
+    if (s.override_text != null) continue; // frase reescrita: ya no cuenta
     for (const w of s.words) {
       if (!w.eligible) continue;
       if (w.sealed) resolved += 1;

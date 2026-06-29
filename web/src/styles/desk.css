@@ -460,3 +460,30 @@
 .speaker-row__sample { font-family: 'Spectral', Georgia, serif; font-size: 1rem; color: var(--ink-soft); margin: 0; line-height: 1.5; }
 .speaker-row__state { font-size: .76rem; color: var(--sealed); padding-top: .6rem; }
 @media (max-width: 720px) { .speaker-row { grid-template-columns: 1fr; gap: .4rem; } }
+
+/* ── Editor enriquecido: tabla Hablante | Texto ───────────────────────────────── */
+.rw-table { display: flex; flex-direction: column; }
+.rw-row {
+  display: grid; grid-template-columns: 150px 1fr; gap: 1.2rem;
+  padding: .7rem 0; border-top: 1px solid var(--rule);
+}
+.rw-row:first-child { border-top: 0; }
+.rw-speaker { padding-top: .15rem; display: flex; flex-direction: column; gap: .3rem; align-items: flex-start; }
+.rw-speaker .turn__reprocess { opacity: 0; transition: opacity .12s; }
+.rw-row:hover .rw-speaker .turn__reprocess { opacity: 1; }
+
+/* La celda de texto editable: se ve y se edita como un documento */
+.rw-cell .ProseMirror {
+  font-family: 'Spectral', Georgia, serif;
+  font-size: 1.12rem; line-height: 1.85; color: var(--ink);
+  outline: none; white-space: pre-wrap;
+}
+.rw-cell .ProseMirror:focus { outline: none; }
+.rw-cell .ProseMirror p { margin: 0; }
+/* La palabra: cursor de texto normal; el resaltado de duda lo pone la decoración */
+.rw-cell .rw { border-radius: 3px; }
+.rw-cell .rw:hover { background: rgba(52,64,107,.06); }
+
+@media (max-width: 720px) {
+  .rw-row { grid-template-columns: 1fr; gap: .35rem; }
+}

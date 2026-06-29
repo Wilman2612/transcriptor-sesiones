@@ -12,6 +12,13 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@tiptap/core": "^3.27.1",
+    "@tiptap/extension-document": "^3.27.1",
+    "@tiptap/extension-history": "^3.27.1",
+    "@tiptap/extension-paragraph": "^3.27.1",
+    "@tiptap/extension-text": "^3.27.1",
+    "@tiptap/pm": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.0"
