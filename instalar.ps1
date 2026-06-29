@@ -78,29 +78,69 @@ function Get-ModelDesc($m) {
 
 # ── Verificar/instalar Python ─────────────────────────────────────────────────
 
-function Install-PythonIfMissing {
-    $py = Get-Command python -ErrorAction SilentlyContinue
-    if ($py) {
-        $ver = & python --version 2>&1
-        if ($ver -match "3\.(1[1-9]|[2-9]\d)") {
-            Show-OK "Python encontrado: $ver"
-            return (Get-Command python).Source
-        }
-        Show-Warn "Python encontrado pero version antigua ($ver). Instalando version nueva..."
-    }
-
-    Show-Info "Instalando Python 3.12 via winget..."
+function Test-PythonExe($exe) {
+    # Devuelve la version si $exe es un Python 3.11+ usable; si no, $null.
+    if (-not $exe -or -not (Test-Path $exe)) { return $null }
     try {
-        winget install --id Python.Python.3.12 -e --accept-source-agreements --accept-package-agreements --silent 2>&1 | Out-Null
-    } catch {
-        Show-Fail "No se pudo instalar Python. Descargalo de https://python.org e intenta de nuevo."
+        $ver = & $exe --version 2>&1
+        if ("$ver" -match "3\.(1[1-9]|[2-9]\d)") { return "$ver" }
+    } catch {}
+    return $null
+}
+
+function Find-PythonExe {
+    # Busca un python.exe real, ignorando el stub de Microsoft Store (que esta en
+    # WindowsApps y no es Python de verdad). Orden: lanzador py -> PATH -> rutas tipicas.
+    $candidates = @()
+
+    # 1) Lanzador oficial 'py'
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        try { $candidates += (& py -3 -c "import sys; print(sys.executable)" 2>$null) } catch {}
+    }
+    # 2) python del PATH, descartando el stub de la Store
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source -notlike "*WindowsApps*") { $candidates += $cmd.Source }
+    # 3) Ubicaciones tipicas de instalacion (no dependen del PATH de esta sesion)
+    foreach ($glob in @(
+        "$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
+        "$env:ProgramFiles\Python3*\python.exe",
+        "${env:ProgramFiles(x86)}\Python3*\python.exe"
+    )) {
+        $candidates += (Get-ChildItem $glob -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
     }
 
+    foreach ($c in $candidates) {
+        if (Test-PythonExe $c) { return $c }
+    }
+    return $null
+}
+
+function Install-PythonIfMissing {
+    $exe = Find-PythonExe
+    if ($exe) {
+        Show-OK "Python encontrado: $(Test-PythonExe $exe)"
+        return $exe
+    }
+
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Show-Fail "No se encontro Python ni winget. Instala Python 3.12 desde https://www.python.org/downloads/ (marca 'Add python.exe to PATH') y vuelve a ejecutar INSTALAR.bat."
+    }
+
+    Show-Info "Instalando Python 3.12 (puede tardar 1-2 min)..."
+    try {
+        winget install --id Python.Python.3.12 -e --source winget --accept-source-agreements --accept-package-agreements --silent 2>&1 | Out-Null
+    } catch {
+        Show-Fail "No se pudo instalar Python automaticamente. Descargalo de https://www.python.org/downloads/ e intenta de nuevo."
+    }
+
+    # Refrescar PATH y re-buscar escaneando las rutas reales (no solo el PATH).
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    $py = Get-Command python -ErrorAction SilentlyContinue
-    if (-not $py) { Show-Fail "Python instalado pero no encontrado en PATH. Reinicia e intenta de nuevo." }
-    Show-OK "Python instalado correctamente."
-    return $py.Source
+    $exe = Find-PythonExe
+    if (-not $exe) {
+        Show-Fail "Python se instalo pero no se encontro. Cierra esta ventana, REINICIA la PC y vuelve a ejecutar INSTALAR.bat."
+    }
+    Show-OK "Python instalado: $(Test-PythonExe $exe)"
+    return $exe
 }
 
 # ── Verificar/instalar ffmpeg (procesa el audio) ──────────────────────────────

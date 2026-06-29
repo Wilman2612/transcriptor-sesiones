@@ -28,6 +28,12 @@ def open_browser(port: int):
 
 
 if __name__ == "__main__":
+    # Anclar el directorio de trabajo a la carpeta del programa: así los datos
+    # (data/transcriptor.db, audios, exports) viven SIEMPRE dentro de esta carpeta
+    # —autocontenido, como un juego— sin importar desde dónde se lance. En dev es
+    # el repo; instalado, la carpeta donde se descomprimió.
+    os.chdir(BASE)
+
     ensure_dirs()
 
     # Copiar .env.example → .env si no existe
