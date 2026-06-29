@@ -37,10 +37,16 @@ function Show-Fail($msg) {
 # ── Deteccion de hardware ─────────────────────────────────────────────────────
 
 function Get-HardwareInfo {
-    $ram_gb = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
-    $cores  = (Get-CimInstance Win32_Processor).NumberOfLogicalProcessors
-    $gpuObj = Get-CimInstance Win32_VideoController | Where-Object { $_.Name -match "NVIDIA" } | Select-Object -First 1
-    $gpu    = if ($gpuObj) { $gpuObj.Name } else { $null }
+    # Cada consulta WMI va en su propio try: en algunas PCs Get-CimInstance falla y,
+    # con ErrorActionPreference=Stop, eso tumbaria el instalador. Con fallback nunca falla.
+    $ram_gb = 8; $cores = 4; $gpu = $null
+    try { $ram_gb = [math]::Round((Get-CimInstance Win32_ComputerSystem -ErrorAction Stop).TotalPhysicalMemory / 1GB) } catch {}
+    try { $cores  = (Get-CimInstance Win32_Processor -ErrorAction Stop | Measure-Object -Property NumberOfLogicalProcessors -Sum).Sum } catch {}
+    if (-not $cores -or $cores -lt 1) { $cores = 4 }
+    try {
+        $gpuObj = Get-CimInstance Win32_VideoController -ErrorAction Stop | Where-Object { $_.Name -match "NVIDIA" } | Select-Object -First 1
+        if ($gpuObj) { $gpu = $gpuObj.Name }
+    } catch {}
     return @{ ram_gb = $ram_gb; cores = $cores; gpu = $gpu }
 }
 
@@ -252,6 +258,8 @@ Read-Host | Out-Null
 
 Show-Header
 
+try {
+
 # Paso 1: Hardware
 Show-Step 1 7 "Analizando tu computadora..."
 $info  = Get-HardwareInfo
@@ -306,3 +314,21 @@ Write-Host "  Modelo: $model  |  RAM: $($info.ram_gb) GB  |  GPU: $(if ($info.gp
 Write-Host ""
 Write-Host "  Presiona ENTER para cerrar..." -ForegroundColor DarkGray
 Read-Host | Out-Null
+
+} catch {
+    # Red de seguridad: cualquier error no previsto muestra el detalle y espera,
+    # en vez de cerrar la ventana en silencio.
+    Write-Host ""
+    Write-Host "  +----------------------------------------------------------+" -ForegroundColor Red
+    Write-Host "  |          LA INSTALACION SE DETUVO                        |" -ForegroundColor Red
+    Write-Host "  +----------------------------------------------------------+" -ForegroundColor Red
+    Write-Host ""
+    Write-Host "  Motivo: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "  Detalle tecnico (para soporte):" -ForegroundColor DarkGray
+    Write-Host "  $($_.ScriptStackTrace)" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "  Presiona ENTER para cerrar..." -ForegroundColor DarkGray
+    Read-Host | Out-Null
+    exit 1
+}
