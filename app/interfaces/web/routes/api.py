@@ -19,7 +19,7 @@ from app.config import settings
 from app.domain.entities import JobType
 from app.infrastructure.jobs.worker import enqueue
 from app.infrastructure.persistence.database import get_db
-from app.infrastructure.persistence.models import SegmentModel, SessionModel
+from app.infrastructure.persistence.models import GlossaryTermModel, SegmentModel, SessionModel
 from app.infrastructure.persistence.repositories import (
     SqlJobRepository,
     SqlSegmentRepository,
@@ -27,6 +27,8 @@ from app.infrastructure.persistence.repositories import (
 )
 from app.interfaces.web.api_schemas import (
     CreatedSessionOut,
+    GlossaryTermIn,
+    GlossaryTermOut,
     JobStatusOut,
     ReviewOut,
     SegmentOut,
@@ -176,3 +178,37 @@ def rewrite_segment(segment_id: int, body: SegmentTextIn, db: DbSession = Depend
     db.commit()
     left = count_session_doubts_left(db, m.session_id)
     return WordCorrectionOut(ok=True, session_doubts_left=left)
+
+
+# ── Glosario (global) ──────────────────────────────────────────────────────────
+
+@router.get("/glossary", response_model=list[GlossaryTermOut])
+def list_glossary(db: DbSession = Depends(get_db)):
+    rows = db.query(GlossaryTermModel).order_by(GlossaryTermModel.kind, GlossaryTermModel.text).all()
+    return [
+        GlossaryTermOut(id=r.id, text=r.text, kind=r.kind, source=r.source) for r in rows
+    ]
+
+
+@router.post("/glossary", response_model=GlossaryTermOut, status_code=201)
+def add_glossary(body: GlossaryTermIn, db: DbSession = Depends(get_db)):
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(400, "Texto vacío")
+    kind = body.kind if body.kind in ("persona", "termino", "patron") else "persona"
+    existing = db.query(GlossaryTermModel).filter_by(text=text, kind=kind).first()
+    if existing:
+        return GlossaryTermOut(id=existing.id, text=existing.text, kind=existing.kind, source=existing.source)
+    m = GlossaryTermModel(text=text, kind=kind, source="manual")
+    db.add(m)
+    db.commit()
+    db.refresh(m)
+    return GlossaryTermOut(id=m.id, text=m.text, kind=m.kind, source=m.source)
+
+
+@router.delete("/glossary/{term_id}", status_code=204)
+def delete_glossary(term_id: int, db: DbSession = Depends(get_db)):
+    m = db.get(GlossaryTermModel, term_id)
+    if m:
+        db.delete(m)
+        db.commit()

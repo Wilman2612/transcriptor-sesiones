@@ -50,3 +50,12 @@ export interface JobStatus {
   error: string | null;
   review_ready: boolean;
 }
+
+export type GlossaryKind = "persona" | "termino" | "patron";
+
+export interface GlossaryTerm {
+  id: number;
+  text: string;
+  kind: GlossaryKind;
+  source: string;
+}

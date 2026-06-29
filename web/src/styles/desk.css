@@ -391,3 +391,17 @@
   .turn { grid-template-columns: 1fr; gap: .4rem; }
   .phrase { grid-template-columns: 50px 1fr; gap: .5rem; }
 }
+
+/* ── Glosario ───────────────────────────────────────────────────────────────── */
+.glossary { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+.glossary__item {
+  display: inline-flex; align-items: center; gap: .5rem;
+  font-family: 'Inter', sans-serif; font-size: .9rem; color: var(--ink);
+  background: #fff; border: 1px solid var(--rule); border-radius: 99px;
+  padding: .3rem .4rem .3rem .8rem;
+}
+.glossary__del {
+  border: 0; background: var(--paper-edge); color: var(--ink-soft);
+  width: 1.3rem; height: 1.3rem; border-radius: 50%; cursor: pointer; line-height: 1;
+}
+.glossary__del:hover { background: var(--doubt-high-wash); color: var(--doubt-high); }

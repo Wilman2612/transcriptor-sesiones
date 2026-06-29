@@ -72,6 +72,18 @@ class CorrectionModel(Base):
     segment: Mapped["SegmentModel"] = relationship(back_populates="correction")
 
 
+class GlossaryTermModel(Base):
+    """Glosario global del consejo/municipalidad: nombres, términos legales,
+    patrones. Sesga a Whisper, sugiere correcciones y nutre los hablantes."""
+    __tablename__ = "glossary_terms"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    text: Mapped[str] = mapped_column(String(255))
+    kind: Mapped[str] = mapped_column(String(16), default="persona")  # persona | termino | patron
+    source: Mapped[str] = mapped_column(String(16), default="manual")  # manual | historial
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class JobModel(Base):
     __tablename__ = "jobs"
 

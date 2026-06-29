@@ -63,3 +63,15 @@ class WordCorrectionOut(BaseModel):
 
 class CreatedSessionOut(BaseModel):
     id: int
+
+
+class GlossaryTermOut(BaseModel):
+    id: int
+    text: str
+    kind: str  # persona | termino | patron
+    source: str
+
+
+class GlossaryTermIn(BaseModel):
+    text: str
+    kind: str = "persona"
