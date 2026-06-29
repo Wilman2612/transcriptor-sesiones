@@ -237,6 +237,14 @@ function Set-AppConfig($model, $info) {
         Copy-Item "$BASE\.env.example" $envPath
     }
     $device = if ($info.gpu) { "cuda" } else { "cpu" }
+
+    # Carpeta de datos FUERA del programa, en Documentos: así las sesiones
+    # corregidas sobreviven si el usuario vuelve a copiar/extraer el ZIP.
+    $docs    = [Environment]::GetFolderPath("MyDocuments")
+    $dataDir = Join-Path $docs "Transcriptor Municipal\data"
+    New-Item -ItemType Directory -Force $dataDir | Out-Null
+    $dataDirEnv = $dataDir -replace "\\", "/"   # barras normales para el .env
+
     $content = Get-Content $envPath -Raw
     $content = $content -replace "WHISPER_MODEL=\S+",   "WHISPER_MODEL=$model"
     $content = $content -replace "WHISPER_BACKEND=\S+", "WHISPER_BACKEND=local"
@@ -245,8 +253,14 @@ function Set-AppConfig($model, $info) {
     } else {
         $content = $content.TrimEnd() + "`r`nWHISPER_DEVICE=$device`r`n"
     }
+    if ($content -match "(?m)^DATA_DIR=") {
+        $content = $content -replace "(?m)^DATA_DIR=.*$", "DATA_DIR=$dataDirEnv"
+    } else {
+        $content = $content.TrimEnd() + "`r`nDATA_DIR=$dataDirEnv`r`n"
+    }
     [System.IO.File]::WriteAllText($envPath, $content)
     Show-OK "Configuracion guardada (modelo: $model, dispositivo: $device)."
+    Show-Info "Tus sesiones se guardaran en: $dataDir"
 }
 
 # ── Acceso directo y lanzador ─────────────────────────────────────────────────

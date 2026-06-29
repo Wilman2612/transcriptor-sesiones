@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,9 +20,32 @@ class Settings(BaseSettings):
     whisper_language: str = "es"
 
     whisper_device: str = "auto"   # auto | cpu | cuda
-    database_url: str = "sqlite:///./data/transcriptor.db"
-    uploads_dir: str = "data/uploads"
-    chunks_dir: str = "data/chunks"
+
+    # Carpeta raíz de TODOS los datos (BD, audios, chunks, exports).
+    #  - Dev: "data" (relativa al repo).
+    #  - Instalado: el instalador escribe una ruta absoluta en Documentos, para
+    #    que las sesiones corregidas sobrevivan si se vuelve a copiar/extraer el ZIP.
+    data_dir: str = "data"
+
+    @property
+    def data_path(self) -> Path:
+        return Path(self.data_dir)
+
+    @property
+    def database_url(self) -> str:
+        return f"sqlite:///{(self.data_path / 'transcriptor.db').as_posix()}"
+
+    @property
+    def uploads_dir(self) -> str:
+        return str(self.data_path / "uploads")
+
+    @property
+    def chunks_dir(self) -> str:
+        return str(self.data_path / "chunks")
+
+    @property
+    def exports_dir(self) -> str:
+        return str(self.data_path / "exports")
 
 
 settings = Settings()

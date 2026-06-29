@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session as DbSession
 
 from app.application.use_cases.export_transcript import export_transcript
+from app.config import settings
 from app.infrastructure.persistence.database import get_db
 
 router = APIRouter()
@@ -15,7 +16,7 @@ def export(session_id: int, fmt: str, db: DbSession = Depends(get_db)):
     if fmt not in ("txt", "docx"):
         return JSONResponse({"error": "Formato no soportado"}, status_code=400)
 
-    output_dir = f"data/exports/{session_id}"
+    output_dir = f"{settings.exports_dir}/{session_id}"
     paths = export_transcript(session_id, db, output_dir)
 
     file_path = paths[fmt]

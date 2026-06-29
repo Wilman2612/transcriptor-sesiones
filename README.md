@@ -27,6 +27,10 @@ No programming knowledge required. You only need Windows 10/11 and an internet c
 
 If anything fails, the installer tells you what happened in plain language and how to continue.
 
+> Your sessions are saved under **Documents → Transcriptor Municipal**, *outside* the program
+> folder, so they survive if you re-download or re-extract the ZIP. The program folder itself can
+> be deleted and reinstalled without losing your work.
+
 ## How to use it
 
 1. **Upload** the session recording (and, if you have it, the phone's automatic transcript with

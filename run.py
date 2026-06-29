@@ -13,8 +13,12 @@ BASE = Path(__file__).parent
 
 
 def ensure_dirs():
-    for d in ["data/uploads", "data/chunks", "data/exports"]:
-        (BASE / d).mkdir(parents=True, exist_ok=True)
+    # Crea la carpeta de datos donde la configura settings (repo en dev, Documentos
+    # si el instalador puso DATA_DIR). mkdir con parents crea también la raíz, así
+    # SQLite encuentra el directorio antes de abrir la BD.
+    from app.config import settings
+    for d in [settings.uploads_dir, settings.chunks_dir, settings.exports_dir]:
+        Path(d).mkdir(parents=True, exist_ok=True)
 
 
 def run_migrations():
@@ -34,9 +38,7 @@ if __name__ == "__main__":
     # el repo; instalado, la carpeta donde se descomprimió.
     os.chdir(BASE)
 
-    ensure_dirs()
-
-    # Copiar .env.example → .env si no existe
+    # Copiar .env.example → .env si no existe (antes de leer la configuración).
     env_file = BASE / ".env"
     if not env_file.exists():
         example = BASE / ".env.example"
@@ -44,6 +46,7 @@ if __name__ == "__main__":
             env_file.write_text(example.read_text())
             print("Creado .env desde .env.example — revisa la configuración si es necesario.")
 
+    ensure_dirs()
     run_migrations()
 
     port = int(os.environ.get("PORT", 8000))
