@@ -24,8 +24,9 @@ function phraseText(seg: Segment): string {
   return seg.override_text ?? seg.words.map((w) => w.text).join(" ");
 }
 
-/** Un turno de hablante: una etiqueta para todo el turno, y debajo cada frase
- *  como una línea separada (con su tiempo y editable como texto o por palabra). */
+/** Un turno de hablante como un párrafo fluido (estilo Word/acta). La metadata
+ *  (tiempo de cada frase, ✎ para reescribir, confianza por palabra) aparece al
+ *  pasar el cursor, sin estorbar la lectura. */
 export function Turn({
   turn,
   threshold,
@@ -54,15 +55,76 @@ export function Turn({
 
   return (
     <article className={`turn${resolved ? " is-resolved" : ""}`}>
-      <div className="turn__meta">
-        <span className="turn__speaker">
-          <span className="seg__speaker-glyph" />
+      <div className="turn__para">
+        <span className="turn__lead">
           {onRename ? (
             <SpeakerLabel speakerKey={turn.speaker} name={speakerName ?? turn.speaker} onRename={onRename} />
           ) : (
-            (speakerName ?? turn.speaker)
+            speakerName ?? turn.speaker
           )}
+          {": "}
         </span>
+
+        {turn.segments.map((seg) => {
+          if (seg.id === textSegId) {
+            return (
+              <PhraseEditor
+                key={seg.id}
+                initialText={phraseText(seg)}
+                onSave={(text) => onSavePhrase(seg.id, text)}
+                onCancel={onCancelPhrase}
+                onPlay={() => onSeek?.(seg.start_ms)}
+              />
+            );
+          }
+          if (seg.override_text != null) {
+            return (
+              <span
+                key={seg.id}
+                className="phrase phrase--rewritten"
+                role="button"
+                tabIndex={0}
+                title="Texto reescrito. Pulsa para editar de nuevo."
+                onClick={() => onEditPhrase(seg.id)}
+              >
+                {seg.override_text}{" "}
+              </span>
+            );
+          }
+          return (
+            <span key={seg.id} className="phrase" data-seg-id={seg.id}>
+              <span className="phrase__ctrl" contentEditable={false}>
+                <button
+                  className="phrase__time"
+                  type="button"
+                  title={`Reproducir desde ${msToStr(seg.start_ms)}`}
+                  onClick={() => onSeek?.(seg.start_ms)}
+                >
+                  ▸ {msToStr(seg.start_ms)}
+                </button>
+                <button
+                  className="phrase__edit"
+                  type="button"
+                  title="Reescribir esta frase como texto"
+                  onClick={() => onEditPhrase(seg.id)}
+                >
+                  ✎
+                </button>
+              </span>
+              {seg.words.map((w, i) => (
+                <span key={w.idx}>
+                  {i > 0 ? " " : ""}
+                  <Word
+                    word={w}
+                    threshold={threshold}
+                    onPick={(word, rect) => onPickWord?.(seg.id, word, rect)}
+                  />
+                </span>
+              ))}{" "}
+            </span>
+          );
+        })}
+
         {onReprocess && (
           <button
             className="turn__reprocess"
@@ -74,63 +136,6 @@ export function Turn({
             {busy ? "Procesando…" : "⟳ Re-procesar"}
           </button>
         )}
-      </div>
-
-      <div className="turn__phrases">
-        {turn.segments.map((seg) => (
-          <div className="phrase" data-seg-id={seg.id} key={seg.id}>
-            <button
-              className="phrase__time"
-              type="button"
-              title={`Reproducir desde ${msToStr(seg.start_ms)}`}
-              onClick={() => onSeek?.(seg.start_ms)}
-            >
-              ▸ {msToStr(seg.start_ms)}
-            </button>
-
-            <div className="phrase__body">
-              {seg.id === textSegId ? (
-                <PhraseEditor
-                  initialText={phraseText(seg)}
-                  onSave={(text) => onSavePhrase(seg.id, text)}
-                  onCancel={onCancelPhrase}
-                  onPlay={() => onSeek?.(seg.start_ms)}
-                />
-              ) : seg.override_text != null ? (
-                <span
-                  className="phrase-rewritten"
-                  role="button"
-                  tabIndex={0}
-                  title="Texto reescrito. Pulsa para editar de nuevo."
-                  onClick={() => onEditPhrase(seg.id)}
-                >
-                  {seg.override_text}
-                </span>
-              ) : (
-                <>
-                  <button
-                    className="phrase-edit-btn"
-                    type="button"
-                    title="Reescribir esta frase como texto"
-                    onClick={() => onEditPhrase(seg.id)}
-                  >
-                    ✎
-                  </button>{" "}
-                  {seg.words.map((w, i) => (
-                    <span key={w.idx} data-idx={w.idx}>
-                      {i > 0 ? " " : ""}
-                      <Word
-                        word={w}
-                        threshold={threshold}
-                        onPick={(word, rect) => onPickWord?.(seg.id, word, rect)}
-                      />
-                    </span>
-                  ))}
-                </>
-              )}
-            </div>
-          </div>
-        ))}
       </div>
     </article>
   );

@@ -359,37 +359,51 @@
 .phrase-edit__actions { display: flex; gap: .4rem; align-items: center; margin-top: .4rem; }
 .phrase-edit__hint { font-size: .72rem; color: var(--ink-faint); margin-left: auto; }
 
-/* ── Turno de hablante: etiqueta una vez + frases en líneas separadas ───────── */
-.turn {
-  display: grid;
-  grid-template-columns: 132px 1fr;
-  gap: 1.2rem;
-  padding: 1rem 0;
-  border-top: 1px solid var(--rule);
-}
-.turn:last-child { border-bottom: 1px solid var(--rule); }
-.turn__meta { padding-top: .35rem; }
-.turn__speaker { font-weight: 600; font-size: .82rem; color: var(--ink); }
-.turn.is-resolved .turn__speaker { color: var(--sealed); }
-
-.turn__phrases { display: flex; flex-direction: column; gap: .45rem; }
-.phrase {
-  display: grid; grid-template-columns: 58px 1fr; gap: .7rem; align-items: baseline;
-}
-.phrase__time {
-  font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
-  font-size: .72rem; color: var(--accent); background: none; border: 0;
-  padding: .1rem 0; cursor: pointer; text-align: left; white-space: nowrap;
-}
-.phrase__time:hover { text-decoration: underline; }
-.phrase__body {
+/* ── Turno de hablante: párrafo fluido estilo Word, separado por hablante ───── */
+.turn { padding: .55rem 0; border-top: 1px solid var(--rule); }
+.turn:first-child { border-top: 0; }
+.turn__para {
   font-family: 'Spectral', Georgia, serif;
-  font-size: 1.1rem; line-height: 1.7; color: var(--ink);
+  font-size: 1.12rem; line-height: 1.95; color: var(--ink);
 }
+.turn__lead {
+  font-family: 'Inter', sans-serif; font-weight: 600; font-size: .95rem;
+  color: var(--ink); margin-right: .15rem;
+}
+.turn.is-resolved .turn__lead { color: var(--sealed); }
+
+/* Una frase dentro del párrafo: ancla para mostrar su control en hover */
+.phrase { position: relative; }
+.phrase:hover { background: rgba(52, 64, 107, .05); border-radius: 3px; }
+.phrase__ctrl {
+  position: absolute; left: 0; top: -1.25em; z-index: 5;
+  display: inline-flex; gap: .25rem; align-items: center;
+  opacity: 0; pointer-events: none; transition: opacity .12s;
+  white-space: nowrap;
+  background: #fff; border: 1px solid var(--rule); border-radius: 99px;
+  padding: .05rem .35rem; box-shadow: var(--shadow);
+  font-family: 'Inter', sans-serif;
+}
+.phrase:hover .phrase__ctrl { opacity: 1; pointer-events: auto; }
+.phrase__time {
+  font-variant-numeric: tabular-nums; font-size: .68rem; color: var(--accent);
+  background: none; border: 0; cursor: pointer; padding: 0; white-space: nowrap;
+}
+.phrase__edit {
+  font-size: .72rem; color: var(--ink-soft); background: none; border: 0;
+  cursor: pointer; padding: 0 .1rem;
+}
+.phrase__edit:hover, .phrase__time:hover { color: var(--accent); }
+
+/* Botón re-procesar: discreto, aparece al pasar el cursor por el turno */
+.turn .turn__reprocess {
+  margin-left: .5rem; opacity: 0; transition: opacity .12s; vertical-align: 1px;
+}
+.turn:hover .turn__reprocess { opacity: 1; }
 
 @media (max-width: 720px) {
-  .turn { grid-template-columns: 1fr; gap: .4rem; }
-  .phrase { grid-template-columns: 50px 1fr; gap: .5rem; }
+  .phrase:hover { background: none; }
+  .phrase__ctrl { opacity: 1; pointer-events: auto; position: static; box-shadow: none; border: 0; padding: 0; background: none; }
 }
 
 /* ── Glosario ───────────────────────────────────────────────────────────────── */
@@ -408,10 +422,10 @@
 
 /* ── Botón re-procesar tramo ──────────────────────────────────────────────────── */
 .turn__reprocess {
-  display: block; margin-top: .5rem;
-  font-family: 'Inter', sans-serif; font-size: .72rem; color: var(--accent);
+  display: inline-block;
+  font-family: 'Inter', sans-serif; font-size: .68rem; color: var(--accent);
   background: none; border: 1px solid var(--accent-soft); border-radius: 99px;
-  padding: .2rem .55rem; cursor: pointer;
+  padding: .1rem .5rem; cursor: pointer;
 }
 .turn__reprocess:hover:not(:disabled) { background: var(--accent-soft); }
 .turn__reprocess:disabled { opacity: .6; cursor: default; }

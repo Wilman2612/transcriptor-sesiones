@@ -47,13 +47,12 @@ export function Word({ word, threshold, onPick }: Props) {
       data-idx={word.idx}
       tabIndex={0}
       role="button"
-      title={`Confianza: ${pct}%`}
+      title={`Confianza: ${pct}% · pulsa para revisar`}
       aria-label={`Palabra dudosa: ${word.text}, confianza ${pct} por ciento. Pulsa para revisar.`}
       onClick={pick}
       onKeyDown={onKey}
     >
       {word.text}
-      <sup className="w__conf">{pct}</sup>
     </span>
   );
 }
