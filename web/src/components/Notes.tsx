@@ -2,12 +2,13 @@ interface ExportProps {
   onExport?: () => void;
 }
 
-/** Sesión sin dudas: la IA salió limpia. Tono informativo, no "completaste". */
+/** Sesión sin dudas: la IA salió limpia. Tono informativo, no "completaste".
+ *  Glifo distinto (✦, no ✓) para no confundirse con "revisión completa". */
 export function EmptyNote({ onExport }: ExportProps) {
   return (
     <div className="note" style={{ borderStyle: "solid", borderColor: "var(--accent-soft)" }}>
       <span className="note__mark" style={{ color: "var(--accent)" }}>
-        ✓
+        ✦
       </span>
       <p className="note__title">Sin dudas que revisar</p>
       <p className="note__body">
@@ -38,7 +39,7 @@ export function ResolvedNote({ count, onExport }: ExportProps & { count: number 
   );
 }
 
-export function ErrorNote({ onRetry }: { onRetry?: () => void }) {
+export function ErrorNote({ onRetry, onBack }: { onRetry?: () => void; onBack?: () => void }) {
   return (
     <div className="note note--error">
       <span className="note__mark">⚠</span>
@@ -47,9 +48,16 @@ export function ErrorNote({ onRetry }: { onRetry?: () => void }) {
         El audio se cargó bien, pero el proceso se interrumpió. Vuelve a intentarlo; si el problema
         sigue, avisa a soporte.
       </p>
-      <button className="btn btn--primary" type="button" onClick={onRetry}>
-        Reintentar transcripción
-      </button>
+      <div className="actions" style={{ justifyContent: "center" }}>
+        <button className="btn btn--primary" type="button" onClick={onRetry}>
+          Reintentar transcripción
+        </button>
+        {onBack && (
+          <button className="btn btn--ghost" type="button" onClick={onBack}>
+            Volver a sesiones
+          </button>
+        )}
+      </div>
     </div>
   );
 }

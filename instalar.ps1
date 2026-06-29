@@ -126,6 +126,28 @@ function Install-AppDeps($scripts, $hasGpu) {
     Show-OK "Dependencias instaladas."
 }
 
+# ── Compilar interfaz React (web/dist) ────────────────────────────────────────
+
+function Build-Frontend($base) {
+    $dist = Join-Path $base "web\dist\index.html"
+    if (Test-Path $dist) {
+        Show-OK "Interfaz ya compilada."
+        return
+    }
+    $node = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $node) {
+        Show-Warn "Node.js no encontrado: la interfaz nueva no se compilo. Se usara la interfaz web basica."
+        return
+    }
+    Show-Info "Compilando la interfaz (una sola vez, puede tardar 1-2 min)..."
+    Push-Location (Join-Path $base "web")
+    & npm ci 2>&1 | Out-Null
+    & npm run build 2>&1 | Out-Null
+    Pop-Location
+    if (Test-Path $dist) { Show-OK "Interfaz compilada." }
+    else { Show-Warn "No se pudo compilar la interfaz; se usara la web basica." }
+}
+
 # ── Descargar modelo Whisper ──────────────────────────────────────────────────
 
 function Invoke-ModelDownload($scripts, $model) {
@@ -219,7 +241,7 @@ Read-Host | Out-Null
 Show-Header
 
 # Paso 1: Hardware
-Show-Step 1 6 "Analizando tu computadora..."
+Show-Step 1 7 "Analizando tu computadora..."
 $info  = Get-HardwareInfo
 $model = Get-RecommendedModel $info
 Show-Info "RAM: $($info.ram_gb) GB  |  CPU: $($info.cores) nucleos  |  GPU NVIDIA: $(if ($info.gpu) { $info.gpu } else { 'No detectada' })"
@@ -227,27 +249,32 @@ Show-Info "Modelo de IA: $model ($(Get-ModelSize $model)) - $(Get-ModelDesc $mod
 Write-Host ""
 
 # Paso 2: Python
-Show-Step 2 6 "Verificando Python..."
+Show-Step 2 7 "Verificando Python..."
 $pyExe = Install-PythonIfMissing
 Write-Host ""
 
 # Paso 3: Venv
-Show-Step 3 6 "Preparando entorno virtual..."
+Show-Step 3 7 "Preparando entorno virtual..."
 $scripts = New-VirtualEnv $pyExe
 Write-Host ""
 
 # Paso 4: Deps
-Show-Step 4 6 "Instalando librerias..."
+Show-Step 4 7 "Instalando librerias..."
 Install-AppDeps $scripts ($null -ne $info.gpu)
 Write-Host ""
 
 # Paso 5: Modelo
-Show-Step 5 6 "Descargando modelo de inteligencia artificial..."
+Show-Step 5 7 "Descargando modelo de inteligencia artificial..."
 Invoke-ModelDownload $scripts $model
 Write-Host ""
 
-# Paso 6: Config y acceso directo
-Show-Step 6 6 "Finalizando..."
+# Paso 6: Interfaz
+Show-Step 6 7 "Preparando la interfaz..."
+Build-Frontend $BASE
+Write-Host ""
+
+# Paso 7: Config y acceso directo
+Show-Step 7 7 "Finalizando..."
 Set-AppConfig $model $info
 New-AppLauncher
 New-DesktopShortcut

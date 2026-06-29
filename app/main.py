@@ -82,6 +82,16 @@ app.include_router(dev_gallery.router)
 
 # Frontend React compilado (web/dist). El instalador lo compila una vez; el
 # usuario final no necesita Node. Si no está compilado, esta sección se omite.
+# Como es una SPA, las rutas profundas (/app/sessions/1/review) devuelven
+# index.html para que el router de React resuelva del lado del cliente.
 _web_dist = Path(__file__).parent.parent / "web" / "dist"
 if _web_dist.exists():
-    app.mount("/app", StaticFiles(directory=str(_web_dist), html=True), name="react-app")
+    from fastapi.responses import FileResponse
+
+    @app.get("/app")
+    @app.get("/app/{full_path:path}")
+    def serve_react(full_path: str = ""):
+        candidate = _web_dist / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(str(candidate))
+        return FileResponse(str(_web_dist / "index.html"))

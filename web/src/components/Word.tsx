@@ -27,6 +27,7 @@ export function Word({ word, onPick }: Props) {
       className={cls}
       data-idx={word.idx}
       tabIndex={0}
+      role="button"
       aria-label={`Palabra dudosa: ${word.text}. Pulsa para revisar.`}
       onClick={pick}
       onKeyDown={(e) => {

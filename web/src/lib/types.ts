@@ -39,3 +39,11 @@ export interface WordCorrectionResult {
   ok: boolean;
   session_doubts_left: number;
 }
+
+export interface JobStatus {
+  status: string;
+  progress: number;
+  done: boolean;
+  error: string | null;
+  review_ready: boolean;
+}

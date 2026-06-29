@@ -208,11 +208,15 @@
 
 /* Popover de decisión sobre una palabra */
 .pop {
-  position: absolute; z-index: 30;
+  position: absolute; z-index: 30; min-width: 240px;
   background: #fff; border: 1px solid var(--rule); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: .55rem; display: flex; gap: .4rem; align-items: center;
+  box-shadow: var(--shadow); padding: .7rem;
+  display: flex; flex-direction: column; gap: .5rem;
 }
-.pop__hint { font-size: .72rem; color: var(--ink-faint); padding: 0 .2rem; }
+.pop__label { font-family: 'Inter', sans-serif; font-size: .76rem; color: var(--ink-soft); }
+.pop__actions { display: flex; gap: .4rem; justify-content: flex-end; }
+.pop .w-edit { width: 100%; font-size: 1.15rem; padding: .35rem .5rem; border-radius: 4px; background: var(--accent-soft); }
+.pop__hint { font-size: .72rem; color: var(--ink-faint); }
 
 /* ── Estados vacíos / cierre ──────────────────────────────────────────────── */
 .note {
@@ -266,3 +270,32 @@
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ── Barra superior ───────────────────────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 1180px; margin: 0 auto; padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.topbar__brand { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.1rem; color: var(--accent); text-decoration: none; }
+.topbar__link { font-family: 'Inter', sans-serif; font-size: .9rem; color: var(--ink-soft); text-decoration: none; }
+.topbar__link:hover { color: var(--accent); }
+
+/* ── Formulario de subida ─────────────────────────────────────────────────── */
+.form { display: flex; flex-direction: column; gap: 1.1rem; }
+.field { display: flex; flex-direction: column; gap: .35rem; }
+.field__label { font-family: 'Inter', sans-serif; font-size: .85rem; font-weight: 500; color: var(--ink); }
+.field__hint { color: var(--ink-faint); font-weight: 400; }
+.field__input {
+  font-family: 'Inter', sans-serif; font-size: .95rem; color: var(--ink);
+  padding: .55rem .7rem; border: 1px solid var(--rule); border-radius: var(--radius);
+  background: #fff;
+}
+.field__input:focus { outline: none; border-color: var(--accent); }
+.text-error { color: var(--doubt-high); font-size: .88rem; }
+
+/* Estados de sesión en la lista */
+.badge-transcribed, .badge-reviewing { color: var(--sealed); }
+.badge-done { color: var(--sealed); font-weight: 600; }
+.badge-error { color: var(--doubt-high); }
+.badge-processing, .badge-pending { color: var(--ink-soft); }
