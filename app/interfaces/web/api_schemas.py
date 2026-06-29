@@ -20,6 +20,11 @@ class SegmentOut(BaseModel):
     words: list[WordOut]
     total_doubts: int
     doubts_left: int
+    override_text: str | None = None  # reescritura libre; si está, sustituye a words
+
+
+class SegmentTextIn(BaseModel):
+    text: str
 
 
 class ReviewOut(BaseModel):

@@ -104,4 +104,10 @@ export class FakeReviewAdapter implements IReviewRepository {
     }
     return { ok: true, session_doubts_left: this.data.doubts_left };
   }
+
+  async rewriteSegment(segmentId: number, text: string) {
+    const s = this.data.segments.find((x) => x.id === segmentId);
+    if (s) s.override_text = text.trim() || null;
+    return { ok: true, session_doubts_left: this.data.doubts_left };
+  }
 }

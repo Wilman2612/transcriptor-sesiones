@@ -75,6 +75,7 @@ def _to_segment(m: SegmentModel) -> Segment:
         confidence=m.confidence,
         status=SegmentStatus(m.status),
         words=words,
+        override_text=m.override_text,
     )
 
 

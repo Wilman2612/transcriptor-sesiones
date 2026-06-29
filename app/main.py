@@ -37,10 +37,20 @@ from app.infrastructure.persistence.models import Base
 from app.infrastructure.persistence.repositories import SqlJobRepository, SqlSessionRepository
 
 
+def _ensure_columns():
+    """Añade columnas nuevas a una DB existente (create_all no altera tablas)."""
+    from sqlalchemy import text
+    with engine.begin() as conn:
+        cols = {r[1] for r in conn.exec_driver_sql("PRAGMA table_info(segments)")}
+        if "override_text" not in cols:
+            conn.exec_driver_sql("ALTER TABLE segments ADD COLUMN override_text TEXT")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Crear tablas si no existen
     Base.metadata.create_all(bind=engine)
+    _ensure_columns()
 
     # Registrar handlers del worker
     register_handler("ingest", ingest_audio)

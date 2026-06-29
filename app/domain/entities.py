@@ -72,6 +72,7 @@ class Segment:
     confidence: float
     status: SegmentStatus = SegmentStatus.PENDING
     words: list[Word] = field(default_factory=list)
+    override_text: Optional[str] = None
 
 
 @dataclass

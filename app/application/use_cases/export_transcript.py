@@ -31,8 +31,11 @@ def export_transcript(session_id: int, db: DbSession, output_dir: str) -> dict[s
 
     lines = []
     for seg in segments:
-        correction = correction_repo.get_by_segment(seg.id)
-        text = correction.final_text if correction else seg.original_text
+        if seg.override_text:
+            text = seg.override_text
+        else:
+            correction = correction_repo.get_by_segment(seg.id)
+            text = correction.final_text if correction else seg.original_text
         timestamp = _ms_to_str(seg.start_ms)
         lines.append(f"[{timestamp}] {seg.speaker}: {text}")
 

@@ -27,6 +27,7 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
   const [review, setReview] = useState<ReviewData>(initial);
   const [threshold, setThreshold] = useState(defaultThreshold);
   const [editing, setEditing] = useState<Editing | null>(null);
+  const [textSeg, setTextSeg] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const stopAt = useRef<number | null>(null);
 
@@ -79,6 +80,19 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
       const word = seg?.words.find((w) => w.idx === idx);
       if (word) setEditing({ segmentId, word, rect: next.getBoundingClientRect() });
     }, 300);
+  };
+
+  const savePhrase = async (segmentId: number, text: string) => {
+    const res = await repo.rewriteSegment(segmentId, text);
+    const clean = text.trim() || null;
+    setReview((prev) => ({
+      ...prev,
+      doubts_left: res.session_doubts_left,
+      segments: prev.segments.map((s) =>
+        s.id === segmentId ? { ...s, override_text: clean } : s,
+      ),
+    }));
+    setTextSeg(null);
   };
 
   const exportDocx = () => exportUrl && window.open(exportUrl, "_blank");
@@ -152,8 +166,12 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
             key={t.key}
             turn={t}
             threshold={threshold}
+            textSegId={textSeg}
             onSeek={(ms) => playRange(ms, null)}
             onPickWord={(segmentId, word, rect) => setEditing({ segmentId, word, rect })}
+            onEditPhrase={(segId) => setTextSeg(segId)}
+            onSavePhrase={savePhrase}
+            onCancelPhrase={() => setTextSeg(null)}
           />
         ))}
       </div>

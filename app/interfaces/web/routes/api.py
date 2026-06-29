@@ -13,12 +13,13 @@ from app.application.use_cases.correct_word import (
     SegmentNotFound,
     WordIndexOutOfRange,
     apply_word_correction,
+    count_session_doubts_left,
 )
 from app.config import settings
 from app.domain.entities import JobType
 from app.infrastructure.jobs.worker import enqueue
 from app.infrastructure.persistence.database import get_db
-from app.infrastructure.persistence.models import SessionModel
+from app.infrastructure.persistence.models import SegmentModel, SessionModel
 from app.infrastructure.persistence.repositories import (
     SqlJobRepository,
     SqlSegmentRepository,
@@ -29,6 +30,7 @@ from app.interfaces.web.api_schemas import (
     JobStatusOut,
     ReviewOut,
     SegmentOut,
+    SegmentTextIn,
     SessionOut,
     WordCorrectionIn,
     WordCorrectionOut,
@@ -138,6 +140,7 @@ def review_data(session_id: int, db: DbSession = Depends(get_db)):
             SegmentOut(
                 id=v.id, start_ms=v.start_ms, speaker=v.speaker,
                 total_doubts=v.total_doubts, doubts_left=v.doubts_left,
+                override_text=v.override_text,
                 words=[
                     {"text": w.text, "idx": w.idx, "start_ms": w.start_ms, "end_ms": w.end_ms,
                      "confidence": w.confidence, "eligible": w.eligible, "sealed": w.sealed}
@@ -157,4 +160,19 @@ def correct_word(segment_id: int, body: WordCorrectionIn, db: DbSession = Depend
         raise HTTPException(404, "Segmento sin palabras")
     except WordIndexOutOfRange:
         raise HTTPException(400, "Índice fuera de rango")
+    return WordCorrectionOut(ok=True, session_doubts_left=left)
+
+
+@router.post("/segments/{segment_id}/text", response_model=WordCorrectionOut)
+def rewrite_segment(segment_id: int, body: SegmentTextIn, db: DbSession = Depends(get_db)):
+    """Reescribe una frase entera como texto libre (tramos donde Whisper alucinó).
+    Vacío = quitar la reescritura y volver a las palabras."""
+    m = db.get(SegmentModel, segment_id)
+    if not m:
+        raise HTTPException(404, "Segmento no encontrado")
+    text = body.text.strip()
+    m.override_text = text or None
+    m.status = "corrected" if text else "pending"
+    db.commit()
+    left = count_session_doubts_left(db, m.session_id)
     return WordCorrectionOut(ok=True, session_doubts_left=left)

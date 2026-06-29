@@ -24,4 +24,14 @@ export class RealReviewAdapter implements IReviewRepository {
     if (!r.ok) throw new Error(`No se pudo guardar la corrección (${r.status})`);
     return r.json();
   }
+
+  async rewriteSegment(segmentId: number, text: string): Promise<WordCorrectionResult> {
+    const r = await fetch(`${this.baseUrl}/api/segments/${segmentId}/text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!r.ok) throw new Error(`No se pudo guardar el texto (${r.status})`);
+    return r.json();
+  }
 }

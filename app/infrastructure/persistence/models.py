@@ -50,6 +50,9 @@ class SegmentModel(Base):
     status: Mapped[str] = mapped_column(String(32), default="pending")
     # JSON: [{"text": str, "confidence": float, "start_ms": int, "end_ms": int}, ...]
     words_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Reescritura libre de la frase (tramos donde Whisper alucinó): si está
+    # presente, sustituye a las palabras para mostrar y exportar.
+    override_text: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     session: Mapped["SessionModel"] = relationship(back_populates="segments")
     chunk: Mapped["ChunkModel | None"] = relationship(back_populates="segments")

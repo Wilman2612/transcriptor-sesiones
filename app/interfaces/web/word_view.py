@@ -60,6 +60,7 @@ class SegmentView:
     total_doubts: int       # dudas originales en el segmento
     doubts_left: int        # dudas aún sin resolver
     plain_text: str         # texto plano reconstruido (fallback / sin palabras)
+    override_text: str | None = None  # reescritura libre de la frase, si existe
 
     @property
     def had_doubts(self) -> bool:
@@ -109,4 +110,5 @@ def classify_segment(seg, low: float = None, mid: float = None) -> SegmentView:
         total_doubts=total,
         doubts_left=left,
         plain_text=plain,
+        override_text=getattr(seg, "override_text", None),
     )

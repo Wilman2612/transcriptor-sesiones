@@ -19,6 +19,7 @@ export interface Segment {
   words: Word[];
   total_doubts: number;
   doubts_left: number;
+  override_text?: string | null; // reescritura libre; si está, sustituye a words
 }
 
 export interface ReviewData {

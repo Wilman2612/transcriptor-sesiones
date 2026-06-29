@@ -335,3 +335,26 @@
   vertical-align: .08em; white-space: nowrap;
 }
 .phrase-time:hover { color: var(--accent); background: var(--accent-soft); }
+
+/* ── Edición de frase como texto libre ──────────────────────────────────────── */
+.phrase-edit-btn {
+  font-size: .72rem; color: var(--ink-faint); background: none; border: 0;
+  cursor: pointer; padding: 0 .15rem; border-radius: 3px; vertical-align: .05em;
+}
+.phrase-edit-btn:hover { color: var(--accent); background: var(--accent-soft); }
+
+.phrase-rewritten {
+  cursor: pointer; border-radius: 3px; padding: 0 .1rem;
+  box-shadow: inset 0 -2px 0 var(--accent-soft);
+}
+.phrase-rewritten:hover { background: var(--accent-soft); }
+
+.phrase-edit { display: block; margin: .5rem 0; }
+.phrase-edit__area {
+  width: 100%; font-family: 'Spectral', Georgia, serif; font-size: 1.05rem;
+  line-height: 1.6; color: var(--ink); padding: .5rem .6rem; resize: vertical;
+  border: 1px solid var(--accent); border-radius: var(--radius); background: #fff;
+}
+.phrase-edit__area:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.phrase-edit__actions { display: flex; gap: .4rem; align-items: center; margin-top: .4rem; }
+.phrase-edit__hint { font-size: .72rem; color: var(--ink-faint); margin-left: auto; }
