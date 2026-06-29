@@ -3,7 +3,6 @@ Use case: re-procesar un tramo (segunda pasada). Re-transcribe el audio de unos
 segmentos en aislamiento —reseteando el contexto que causó la alucinación— y
 redistribuye las palabras nuevas a esos segmentos por tiempo.
 """
-import json
 from pathlib import Path
 
 from sqlalchemy.orm import Session as DbSession
@@ -61,18 +60,12 @@ def reprocess_segments(db: DbSession, segment_ids: list[int]) -> int:
 
     for s in segs:
         ws = buckets[s.id]
-        s.words_json = json.dumps(
-            [
-                {"text": w.text, "confidence": round(w.confidence, 4),
-                 "start_ms": w.start_ms, "end_ms": w.end_ms, "resolved": False}
-                for w in ws
-            ],
-            ensure_ascii=False,
-        ) if ws else None
         if ws:
-            s.original_text = " ".join(w.text.strip() for w in ws)
-        s.override_text = None   # la reescritura manual queda obsoleta
-        s.status = "pending"
+            # El resultado del re-proceso se guarda como override (texto libre);
+            # el original (words_json / original_text, con sus confianzas) queda
+            # INTACTO para poder comparar corregido vs original más adelante.
+            s.override_text = " ".join(w.text.strip() for w in ws)
+            s.status = "corrected"
     db.commit()
 
     return count_session_doubts_left(db, session.id)

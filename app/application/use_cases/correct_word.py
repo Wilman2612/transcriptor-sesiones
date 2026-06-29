@@ -54,8 +54,8 @@ def count_session_doubts_left(db: DbSession, session_id: int) -> int:
     rows = db.query(SegmentModel).filter_by(session_id=session_id).all()
     left = 0
     for row in rows:
-        if not row.words_json:
-            continue
+        if not row.words_json or row.override_text:
+            continue  # frase reescrita o re-procesada: ya no cuenta como duda
         for w in json.loads(row.words_json):
             if not w.get("resolved", False) and is_doubt(w["text"], w["confidence"], low, mid, floor):
                 left += 1
