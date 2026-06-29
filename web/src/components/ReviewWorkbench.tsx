@@ -34,6 +34,14 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
   const counts = useMemo(() => countDoubts(review, threshold), [review, threshold]);
   const turns = useMemo(() => groupIntoTurns(review.segments), [review.segments]);
 
+  // Clic normal: mueve el audio en silencio (para no estorbar la edición).
+  const seekTo = (ms: number) => {
+    const a = audioRef.current;
+    if (!a) return;
+    stopAt.current = null;
+    a.currentTime = ms / 1000;
+  };
+  // Alt+clic: reproduce ese tramo (oír la palabra).
   const playRange = (startMs: number, endMs: number | null) => {
     const a = audioRef.current;
     if (!a) return;
@@ -98,7 +106,8 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
           <h1 className="desk__title">{review.name}</h1>
           <p className="desk__sub">
             {turns.length} intervenciones · Edita el texto como en un documento. Las palabras
-            marcadas son las de baja confianza; pasa el cursor para ver tiempo y confianza.
+            marcadas son las de baja confianza; pasa el cursor para ver tiempo y confianza, y
+            haz <strong>Alt+clic</strong> en una palabra para oírla.
           </p>
         </div>
         <Tally doubtsLeft={counts.left} totalDoubts={counts.total} />
@@ -153,7 +162,8 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
         threshold={threshold}
         speakers={review.speakers}
         reprocessing={reprocessing}
-        onSeek={(ms) => playRange(ms, null)}
+        onSeek={seekTo}
+        onHearWord={(start, end) => playRange(start, end)}
         onSaveSegment={saveSegment}
         onRename={renameSpeaker}
         onReprocess={reprocessTurn}

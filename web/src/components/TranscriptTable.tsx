@@ -8,6 +8,7 @@ interface Props {
   speakers: Record<string, string>;
   reprocessing: string | null;
   onSeek: (ms: number) => void;
+  onHearWord: (startMs: number, endMs: number) => void;
   onSaveSegment: (segmentId: number, text: string) => void;
   onRename: (key: string, name: string) => void;
   onReprocess: (key: string, segmentIds: number[]) => void;
@@ -21,6 +22,7 @@ export function TranscriptTable({
   speakers,
   reprocessing,
   onSeek,
+  onHearWord,
   onSaveSegment,
   onRename,
   onReprocess,
@@ -45,7 +47,13 @@ export function TranscriptTable({
               {reprocessing === t.key ? "Procesando…" : "⟳ Re-procesar"}
             </button>
           </div>
-          <TurnEditor turn={t} threshold={threshold} onSeek={onSeek} onSaveSegment={onSaveSegment} />
+          <TurnEditor
+            turn={t}
+            threshold={threshold}
+            onSeek={onSeek}
+            onHearWord={onHearWord}
+            onSaveSegment={onSaveSegment}
+          />
         </div>
       ))}
     </div>

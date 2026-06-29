@@ -16,6 +16,7 @@ interface Props {
   turn: Turn;
   threshold: number;
   onSeek: (ms: number) => void;
+  onHearWord: (startMs: number, endMs: number) => void;
   onSaveSegment: (segmentId: number, text: string) => void;
 }
 
@@ -26,9 +27,11 @@ function originalText(seg: Segment): string {
 
 /** El texto de un turno como editor enriquecido: se escribe normal, las
  *  palabras llevan metadata oculta, y al editar se guarda por segmento. */
-export function TurnEditor({ turn, threshold, onSeek, onSaveSegment }: Props) {
+export function TurnEditor({ turn, threshold, onSeek, onHearWord, onSaveSegment }: Props) {
   const onSeekRef = useRef(onSeek);
   onSeekRef.current = onSeek;
+  const onHearRef = useRef(onHearWord);
+  onHearRef.current = onHearWord;
 
   const editor = useEditor({
     extensions: [Document, Paragraph, Text, History, WordMeta, DoubtDecoration(threshold)],
@@ -52,7 +55,12 @@ export function TurnEditor({ turn, threshold, onSeek, onSaveSegment }: Props) {
 
   const onClick = (e: React.MouseEvent) => {
     const el = (e.target as HTMLElement).closest<HTMLElement>("[data-start]");
-    if (el) onSeekRef.current(Number(el.dataset.start));
+    if (!el) return;
+    const start = Number(el.dataset.start);
+    // Alt+clic: oír la palabra. Clic normal: solo reposiciona el audio (silencioso),
+    // para no interrumpir la edición.
+    if (e.altKey && el.dataset.end) onHearRef.current(start, Number(el.dataset.end));
+    else onSeekRef.current(start);
   };
 
   return <EditorContent editor={editor} className="rw-cell" onClick={onClick} />;
