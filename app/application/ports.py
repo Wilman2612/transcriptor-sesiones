@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -27,9 +28,15 @@ class TranscribedSegment:
 class TranscriberPort(ABC):
     @abstractmethod
     def transcribe(
-        self, audio_path: str, chunk_offset_ms: int = 0, initial_prompt: str = ""
+        self,
+        audio_path: str,
+        chunk_offset_ms: int = 0,
+        initial_prompt: str = "",
+        progress_cb: Optional[Callable[[float], None]] = None,
     ) -> list[TranscribedSegment]:
-        """Transcribe un archivo de audio y devuelve segmentos con confianza."""
+        """Transcribe un archivo de audio y devuelve segmentos con confianza.
+        progress_cb(frac): se llama mientras avanza, con la fracción [0,1] del
+        chunk ya transcrita (según el tiempo de audio procesado)."""
 
 
 # ── Audio processing ───────────────────────────────────────────────────────────

@@ -12,4 +12,5 @@ export interface ISessionsRepository {
   list(): Promise<SessionSummary[]>;
   create(s: NewSession): Promise<number>; // devuelve el id de la sesión creada
   status(sessionId: number): Promise<JobStatus>;
+  remove(sessionId: number): Promise<void>; // elimina la sesión y sus archivos
 }

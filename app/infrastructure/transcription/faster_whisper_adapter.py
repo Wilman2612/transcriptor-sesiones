@@ -71,11 +71,15 @@ class FasterWhisperAdapter(TranscriberPort):
         return self._model
 
     def transcribe(
-        self, audio_path: str, chunk_offset_ms: int = 0, initial_prompt: str = ""
+        self, audio_path: str, chunk_offset_ms: int = 0, initial_prompt: str = "",
+        progress_cb=None,
     ) -> list[TranscribedSegment]:
         model = self._get_model()
         params = {**DECODE_PARAMS, "initial_prompt": initial_prompt or None}
-        segments_iter, _ = model.transcribe(audio_path, **params)
+        # faster-whisper devuelve un generador perezoso: el audio se transcribe
+        # a medida que se itera. info.duration nos da el total para el progreso.
+        segments_iter, info = model.transcribe(audio_path, **params)
+        duration = max(getattr(info, "duration", 0.0) or 0.0, 0.001)
 
         result = []
         for seg in segments_iter:
@@ -92,6 +96,10 @@ class FasterWhisperAdapter(TranscriberPort):
                     words=words,
                 )
             )
+            if progress_cb:
+                progress_cb(seg.end / duration)
+        if progress_cb:
+            progress_cb(1.0)
         return result
 
     def transcribe_region(

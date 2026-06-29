@@ -10,8 +10,11 @@ class OpenAIWhisperAdapter(TranscriberPort):
         self.client = openai.OpenAI(api_key=settings.openai_api_key)
 
     def transcribe(
-        self, audio_path: str, chunk_offset_ms: int = 0, initial_prompt: str = ""
+        self, audio_path: str, chunk_offset_ms: int = 0, initial_prompt: str = "",
+        progress_cb=None,
     ) -> list[TranscribedSegment]:
+        # La API de OpenAI no transmite progreso parcial; el avance se reporta a
+        # nivel de chunk en el caso de uso.
         with open(audio_path, "rb") as f:
             response = self.client.audio.transcriptions.create(
                 model="whisper-1",

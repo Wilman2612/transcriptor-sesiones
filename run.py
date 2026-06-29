@@ -9,6 +9,15 @@ import webbrowser
 from pathlib import Path
 from threading import Timer
 
+# La consola de Windows usa cp1252 por defecto: cualquier acento o emoji en un
+# print (o en los logs de uvicorn/la app) lanzaría UnicodeEncodeError y tumbaría
+# el arranque. Forzamos UTF-8 tolerante.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 BASE = Path(__file__).parent
 
 
@@ -50,7 +59,7 @@ if __name__ == "__main__":
     run_migrations()
 
     port = int(os.environ.get("PORT", 8000))
-    print(f"\n✅  Transcriptor iniciado en http://localhost:{port}\n")
+    print(f"\n[OK] Transcriptor iniciado en http://localhost:{port}\n")
     Timer(1.5, open_browser, args=(port,)).start()
 
     import uvicorn

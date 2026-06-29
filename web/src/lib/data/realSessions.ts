@@ -31,4 +31,9 @@ export class RealSessionsAdapter implements ISessionsRepository {
     if (!r.ok) throw new Error(`No se pudo consultar el estado (${r.status})`);
     return r.json();
   }
+
+  async remove(sessionId: number): Promise<void> {
+    const r = await fetch(`${this.baseUrl}/api/sessions/${sessionId}`, { method: "DELETE" });
+    if (!r.ok && r.status !== 404) throw new Error(`No se pudo eliminar la sesión (${r.status})`);
+  }
 }

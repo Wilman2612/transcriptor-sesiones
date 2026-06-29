@@ -109,6 +109,28 @@ def get_session(session_id: int, db: DbSession = Depends(get_db)):
     return SessionOut(id=s.id, name=s.name, date=s.date.strftime("%Y-%m-%d"), status=s.status.value)
 
 
+@router.delete("/sessions/{session_id}", status_code=204)
+def delete_session(session_id: int, db: DbSession = Depends(get_db)):
+    """Elimina una sesión y todo lo suyo: filas (cascada a chunks/segmentos/jobs)
+    y archivos en disco (audio, transcripción S24, chunks, exports)."""
+    m = db.get(SessionModel, session_id)
+    if not m:
+        raise HTTPException(404, "Sesión no encontrada")
+
+    for f in (m.original_audio_path, m.s24_transcript_path):
+        if f:
+            try:
+                Path(f).unlink(missing_ok=True)
+            except OSError:
+                pass
+    for d in (Path(settings.chunks_dir) / str(session_id),
+              Path(settings.exports_dir) / str(session_id)):
+        shutil.rmtree(d, ignore_errors=True)
+
+    db.delete(m)  # cascade borra chunks, segmentos, correcciones y jobs
+    db.commit()
+
+
 @router.get("/sessions/{session_id}/status", response_model=JobStatusOut)
 def session_status(session_id: int, db: DbSession = Depends(get_db)):
     job = SqlJobRepository(db).get_active_for_session(session_id)

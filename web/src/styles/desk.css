@@ -458,6 +458,16 @@
 }
 .btn--bookmark { border-color: var(--accent-soft); color: var(--accent); }
 
+/* Botón de eliminar sesión: discreto, rojo al pasar el cursor (acción destructiva) */
+.session__del {
+  font-family: 'Inter', sans-serif; font-size: .72rem; color: var(--ink-soft);
+  background: none; border: 1px solid var(--rule); border-radius: 99px;
+  padding: .12rem .55rem; cursor: pointer; opacity: .35; transition: opacity .12s, color .12s, border-color .12s;
+}
+.seg:hover .session__del { opacity: 1; }
+.session__del:hover { color: var(--doubt-high); border-color: var(--doubt-high); }
+.session__del:disabled { cursor: default; opacity: .5; }
+
 /* ── Etiqueta de hablante editable ────────────────────────────────────────────── */
 .turn__speaker-btn {
   font-family: inherit; font-weight: 600; font-size: .82rem; color: var(--ink);

@@ -17,10 +17,26 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function SessionListPage() {
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
 
   useEffect(() => {
     repo.list().then(setSessions).catch(() => setSessions([]));
   }, []);
+
+  const handleDelete = async (e: React.MouseEvent, s: SessionSummary) => {
+    e.preventDefault(); // no navegar: el botón está dentro del enlace de la tarjeta
+    e.stopPropagation();
+    if (!window.confirm(`¿Eliminar "${s.name}"? Se borra la grabación y la transcripción. No se puede deshacer.`)) return;
+    setDeleting(s.id);
+    try {
+      await repo.remove(s.id);
+      setSessions((prev) => (prev ?? []).filter((x) => x.id !== s.id));
+    } catch {
+      window.alert("No se pudo eliminar la sesión. Inténtalo de nuevo.");
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   return (
     <div className="desk">
@@ -61,10 +77,21 @@ export function SessionListPage() {
                 <div className="seg__meta">
                   <span className="seg__time">{s.date}</span>
                 </div>
-                <p className="seg__text" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <p className="seg__text" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: ".75rem" }}>
                   <span>{s.name}</span>
-                  <span className={`badge-${s.status}`} style={{ fontSize: ".8rem", fontFamily: "Inter, sans-serif" }}>
-                    {STATUS_LABEL[s.status] ?? s.status}
+                  <span style={{ display: "flex", alignItems: "center", gap: ".75rem" }}>
+                    <span className={`badge-${s.status}`} style={{ fontSize: ".8rem", fontFamily: "Inter, sans-serif" }}>
+                      {STATUS_LABEL[s.status] ?? s.status}
+                    </span>
+                    <button
+                      type="button"
+                      className="session__del"
+                      title="Eliminar esta sesión"
+                      disabled={deleting === s.id}
+                      onClick={(e) => handleDelete(e, s)}
+                    >
+                      {deleting === s.id ? "…" : "Eliminar"}
+                    </button>
                   </span>
                 </p>
               </Link>

@@ -37,13 +37,28 @@ def transcribe_session(job_id: int, db: DbSession) -> None:
         if session.s24_transcript_path:
             s24_segments = aligner.parse_s24(session.s24_transcript_path)
 
+        # Progreso: el rango 5..90 se reparte entre los chunks, y DENTRO de cada
+        # chunk avanza según el tiempo de audio ya transcrito (no salta de golpe).
+        total = max(len(chunks), 1)
+        last_p = [5]
+
+        def make_cb(idx: int):
+            base = 5 + (idx / total) * 85
+            span = (1 / total) * 85
+
+            def cb(frac: float):
+                p = int(base + max(0.0, min(1.0, frac)) * span)
+                if p > last_p[0]:
+                    last_p[0] = p
+                    job_repo.update(job_id, progress=p)
+
+            return cb
+
         all_whisper = []
         for i, chunk in enumerate(chunks):
-            progress = 5 + int((i / len(chunks)) * 85)
-            job_repo.update(job_id, progress=progress)
-
             segs = transcriber.transcribe(
-                chunk.path, chunk_offset_ms=chunk.start_ms, initial_prompt=prompt
+                chunk.path, chunk_offset_ms=chunk.start_ms,
+                initial_prompt=prompt, progress_cb=make_cb(i),
             )
             all_whisper.extend(segs)
 
