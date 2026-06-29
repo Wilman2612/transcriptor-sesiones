@@ -192,17 +192,28 @@ function New-VirtualEnv($pyExe) {
 # ── Dependencias ──────────────────────────────────────────────────────────────
 
 function Install-AppDeps($scripts, $hasGpu) {
-    Show-Info "Instalando dependencias (puede tardar 2-5 min la primera vez)..."
     $py = "$scripts\python.exe"
-    $null = Invoke-Native $py @("-m", "pip", "install", "--upgrade", "pip")
-    $code = Invoke-Native $py @("-m", "pip", "install", "-e", "$BASE\.[dev]")
-    if ($code -ne 0) {
-        Show-Fail "Error al instalar dependencias (codigo $code). Revisa tu conexion a internet. Detalle completo en: $LOG"
-    }
+    Show-Info "Son ~35 librerias (FastAPI, Whisper, etc.). La 1a vez descarga"
+    Show-Info "1-2 GB y tarda varios minutos. Veras el avance en pantalla:"
+    Write-Host ""
 
+    # Salida EN VIVO (no a un log) para que el usuario vea que avanza. EAP=Continue
+    # local: el stderr de pip (avisos) no debe tumbar el script bajo Stop.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & $py -m pip install --upgrade pip
+    & $py -m pip install -e "$BASE\.[dev]"
+    $code = $LASTEXITCODE
     if ($hasGpu) {
+        Write-Host ""
         Show-Info "GPU NVIDIA detectada - instalando soporte CUDA..."
-        $null = Invoke-Native $py @("-m", "pip", "install", "ctranslate2", "--extra-index-url", "https://download.pytorch.org/whl/cu121")
+        & $py -m pip install ctranslate2 --extra-index-url https://download.pytorch.org/whl/cu121
+    }
+    $ErrorActionPreference = $prev
+
+    Write-Host ""
+    if ($code -ne 0) {
+        Show-Fail "Error al instalar dependencias (codigo $code). Mira los mensajes de arriba (suele ser conexion a internet)."
     }
     Show-OK "Dependencias instaladas."
 }
@@ -322,8 +333,6 @@ Write-Host "  el Transcriptor de Sesiones de Consejo Municipal." -ForegroundColo
 Write-Host "  Solo necesitas conexion a internet. Comenzando..." -ForegroundColor DarkGray
 Write-Host ""
 Start-Sleep -Seconds 2
-
-Show-Header
 
 try {
 
