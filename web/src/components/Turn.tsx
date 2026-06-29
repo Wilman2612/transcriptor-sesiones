@@ -84,6 +84,14 @@ export function Turn({
                 </span>
               ) : (
                 <>
+                  <button
+                    className="phrase-edit-btn"
+                    type="button"
+                    title="Reescribir esta frase como texto"
+                    onClick={() => onEditPhrase(seg.id)}
+                  >
+                    ✎
+                  </button>{" "}
                   {seg.words.map((w, i) => (
                     <span key={w.idx} data-idx={w.idx}>
                       {i > 0 ? " " : ""}
@@ -94,14 +102,6 @@ export function Turn({
                       />
                     </span>
                   ))}
-                  <button
-                    className="phrase-edit-btn"
-                    type="button"
-                    title="Reescribir esta frase como texto"
-                    onClick={() => onEditPhrase(seg.id)}
-                  >
-                    ✎
-                  </button>
                 </>
               )}
             </div>
