@@ -358,3 +358,36 @@
 .phrase-edit__area:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
 .phrase-edit__actions { display: flex; gap: .4rem; align-items: center; margin-top: .4rem; }
 .phrase-edit__hint { font-size: .72rem; color: var(--ink-faint); margin-left: auto; }
+
+/* ── Turno de hablante: etiqueta una vez + frases en líneas separadas ───────── */
+.turn {
+  display: grid;
+  grid-template-columns: 132px 1fr;
+  gap: 1.2rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--rule);
+}
+.turn:last-child { border-bottom: 1px solid var(--rule); }
+.turn__meta { padding-top: .35rem; }
+.turn__speaker { font-weight: 600; font-size: .82rem; color: var(--ink); }
+.turn.is-resolved .turn__speaker { color: var(--sealed); }
+
+.turn__phrases { display: flex; flex-direction: column; gap: .45rem; }
+.phrase {
+  display: grid; grid-template-columns: 58px 1fr; gap: .7rem; align-items: baseline;
+}
+.phrase__time {
+  font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
+  font-size: .72rem; color: var(--accent); background: none; border: 0;
+  padding: .1rem 0; cursor: pointer; text-align: left; white-space: nowrap;
+}
+.phrase__time:hover { text-decoration: underline; }
+.phrase__body {
+  font-family: 'Spectral', Georgia, serif;
+  font-size: 1.1rem; line-height: 1.7; color: var(--ink);
+}
+
+@media (max-width: 720px) {
+  .turn { grid-template-columns: 1fr; gap: .4rem; }
+  .phrase { grid-template-columns: 50px 1fr; gap: .5rem; }
+}

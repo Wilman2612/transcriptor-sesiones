@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import type { Turn as TurnT } from "../lib/turns";
 import type { Segment, Word as WordT } from "../lib/types";
 import { msToStr } from "../lib/format";
@@ -20,8 +19,8 @@ function phraseText(seg: Segment): string {
   return seg.override_text ?? seg.words.map((w) => w.text).join(" ");
 }
 
-/** Un turno de hablante: texto fluido, marcas de tiempo intermedias, y cada
- *  frase editable como texto libre (✎) además de palabra por palabra. */
+/** Un turno de hablante: una etiqueta para todo el turno, y debajo cada frase
+ *  como una línea separada (con su tiempo y editable como texto o por palabra). */
 export function Turn({
   turn,
   threshold,
@@ -45,71 +44,70 @@ export function Turn({
   const resolved = hadDoubt && left === 0;
 
   return (
-    <article className={`seg${resolved ? " is-resolved" : ""}`}>
-      <div className="seg__meta">
-        <button className="seg__time" type="button" onClick={() => onSeek?.(turn.start_ms)}>
-          ▸ {msToStr(turn.start_ms)}
-        </button>
-        <span className="seg__speaker">
+    <article className={`turn${resolved ? " is-resolved" : ""}`}>
+      <div className="turn__meta">
+        <span className="turn__speaker">
           <span className="seg__speaker-glyph" />
           {turn.speaker}
         </span>
       </div>
-      <p className="seg__text">
-        {turn.segments.map((seg, si) => (
-          <Fragment key={seg.id}>
-            {si > 0 && (
-              <button
-                className="phrase-time"
-                type="button"
-                title={`Saltar a ${msToStr(seg.start_ms)}`}
-                onClick={() => onSeek?.(seg.start_ms)}
-              >
-                ⏱{msToStr(seg.start_ms)}
-              </button>
-            )}{" "}
-            {seg.id === textSegId ? (
-              <PhraseEditor
-                initialText={phraseText(seg)}
-                onSave={(text) => onSavePhrase(seg.id, text)}
-                onCancel={onCancelPhrase}
-                onPlay={() => onSeek?.(seg.start_ms)}
-              />
-            ) : seg.override_text != null ? (
-              <span
-                className="phrase-rewritten"
-                role="button"
-                tabIndex={0}
-                title="Texto reescrito. Pulsa para editar de nuevo."
-                onClick={() => onEditPhrase(seg.id)}
-              >
-                {seg.override_text}
-              </span>
-            ) : (
-              <>
-                <button
-                  className="phrase-edit-btn"
-                  type="button"
-                  title="Reescribir esta frase como texto"
+
+      <div className="turn__phrases">
+        {turn.segments.map((seg) => (
+          <div className="phrase" data-seg-id={seg.id} key={seg.id}>
+            <button
+              className="phrase__time"
+              type="button"
+              title={`Reproducir desde ${msToStr(seg.start_ms)}`}
+              onClick={() => onSeek?.(seg.start_ms)}
+            >
+              ▸ {msToStr(seg.start_ms)}
+            </button>
+
+            <div className="phrase__body">
+              {seg.id === textSegId ? (
+                <PhraseEditor
+                  initialText={phraseText(seg)}
+                  onSave={(text) => onSavePhrase(seg.id, text)}
+                  onCancel={onCancelPhrase}
+                  onPlay={() => onSeek?.(seg.start_ms)}
+                />
+              ) : seg.override_text != null ? (
+                <span
+                  className="phrase-rewritten"
+                  role="button"
+                  tabIndex={0}
+                  title="Texto reescrito. Pulsa para editar de nuevo."
                   onClick={() => onEditPhrase(seg.id)}
                 >
-                  ✎
-                </button>
-                {seg.words.map((w) => (
-                  <span key={w.idx} data-seg-id={seg.id}>
-                    {" "}
-                    <Word
-                      word={w}
-                      threshold={threshold}
-                      onPick={(word, rect) => onPickWord?.(seg.id, word, rect)}
-                    />
-                  </span>
-                ))}
-              </>
-            )}
-          </Fragment>
+                  {seg.override_text}
+                </span>
+              ) : (
+                <>
+                  {seg.words.map((w, i) => (
+                    <span key={w.idx} data-idx={w.idx}>
+                      {i > 0 ? " " : ""}
+                      <Word
+                        word={w}
+                        threshold={threshold}
+                        onPick={(word, rect) => onPickWord?.(seg.id, word, rect)}
+                      />
+                    </span>
+                  ))}
+                  <button
+                    className="phrase-edit-btn"
+                    type="button"
+                    title="Reescribir esta frase como texto"
+                    onClick={() => onEditPhrase(seg.id)}
+                  >
+                    ✎
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         ))}
-      </p>
+      </div>
     </article>
   );
 }
