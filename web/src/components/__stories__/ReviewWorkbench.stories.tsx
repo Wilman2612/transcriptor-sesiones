@@ -41,3 +41,21 @@ export const EmptyNoDoubts: Story = {
     repo: new FakeReviewAdapter("empty"),
   },
 };
+
+/** Re-procesando un tramo: el botón pasa a "Procesando…" y aparece el indicador
+ *  indeterminado (re-transcribir un tramo no emite progreso %). El adapter tarda
+ *  a propósito para que el estado sea visible. Pasa el cursor por una fila y pulsa
+ *  "⟳ Re-procesar". */
+class SlowReviewAdapter extends FakeReviewAdapter {
+  async reprocess(ids: number[]) {
+    await new Promise((r) => setTimeout(r, 4000));
+    return super.reprocess(ids);
+  }
+}
+
+export const Reprocessing: Story = {
+  args: {
+    initial: reviewFixture("happy"),
+    repo: new SlowReviewAdapter("happy"),
+  },
+};

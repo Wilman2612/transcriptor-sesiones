@@ -46,6 +46,16 @@ export function TranscriptTable({
             >
               {reprocessing === t.key ? "Procesando…" : "⟳ Re-procesar"}
             </button>
+            {reprocessing === t.key && (
+              <div
+                className="reproc-bar"
+                role="progressbar"
+                aria-label="Re-transcribiendo el tramo"
+                title="Re-transcribiendo… puede tardar unos segundos"
+              >
+                <div className="reproc-bar__fill" />
+              </div>
+            )}
           </div>
           <TurnEditor
             turn={t}

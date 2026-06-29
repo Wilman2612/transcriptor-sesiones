@@ -112,7 +112,7 @@ export class FakeReviewAdapter implements IReviewRepository {
     return { ok: true, session_doubts_left: this.data.doubts_left };
   }
 
-  async reprocess() {
+  async reprocess(_segmentIds: number[]) {
     return { ok: true, session_doubts_left: this.data.doubts_left };
   }
 
