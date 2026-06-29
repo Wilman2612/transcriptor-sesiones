@@ -59,3 +59,12 @@ export const Reprocessing: Story = {
     repo: new SlowReviewAdapter("happy"),
   },
 };
+
+/** Revisión retomable: una intervención lleva el marcador "Aquí lo dejé" (barra
+ *  lateral) y arriba aparece "Continuar donde lo dejé" para saltar a ella. */
+export const Bookmarked: Story = {
+  args: {
+    initial: { ...reviewFixture("happy"), bookmark_segment_id: 2 },
+    repo: new FakeReviewAdapter("happy"),
+  },
+};

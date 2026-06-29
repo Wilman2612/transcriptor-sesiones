@@ -78,6 +78,18 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
     }
   };
 
+  const toggleBookmark = async (segmentId: number) => {
+    const next = review.bookmark_segment_id === segmentId ? null : segmentId;
+    setReview((prev) => ({ ...prev, bookmark_segment_id: next }));
+    await repo.setBookmark(review.session_id, next);
+  };
+
+  const goToBookmark = () => {
+    document
+      .getElementById("bookmark-anchor")
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
   const renameSpeaker = async (key: string, name: string) => {
     await repo.setSpeakerName(review.session_id, key, name);
     setReview((prev) => {
@@ -117,6 +129,11 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
         <button className="btn" type="button" onClick={() => audioRef.current?.play()}>
           ▸ Reproducir
         </button>
+        {review.bookmark_segment_id != null && (
+          <button className="btn btn--bookmark" type="button" onClick={goToBookmark}>
+            🔖 Continuar donde lo dejé
+          </button>
+        )}
         {exportUrl && (
           <a className="btn" href={exportUrl}>
             Exportar DOCX
@@ -162,11 +179,13 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
         threshold={threshold}
         speakers={review.speakers}
         reprocessing={reprocessing}
+        bookmarkSegmentId={review.bookmark_segment_id ?? null}
         onSeek={seekTo}
         onHearWord={(start, end) => playRange(start, end)}
         onSaveSegment={saveSegment}
         onRename={renameSpeaker}
         onReprocess={reprocessTurn}
+        onToggleBookmark={toggleBookmark}
       />
     </div>
   );

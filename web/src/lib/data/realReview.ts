@@ -52,4 +52,12 @@ export class RealReviewAdapter implements IReviewRepository {
       body: JSON.stringify({ key, name }),
     });
   }
+
+  async setBookmark(sessionId: number, segmentId: number | null): Promise<void> {
+    await fetch(`${this.baseUrl}/api/sessions/${sessionId}/bookmark`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ segment_id: segmentId }),
+    });
+  }
 }

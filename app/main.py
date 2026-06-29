@@ -47,6 +47,8 @@ def _ensure_columns():
         scols = {r[1] for r in conn.exec_driver_sql("PRAGMA table_info(sessions)")}
         if "speaker_names_json" not in scols:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN speaker_names_json TEXT")
+        if "bookmark_segment_id" not in scols:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN bookmark_segment_id INTEGER")
 
 
 @asynccontextmanager

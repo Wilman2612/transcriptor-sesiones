@@ -7,11 +7,13 @@ interface Props {
   threshold: number;
   speakers: Record<string, string>;
   reprocessing: string | null;
+  bookmarkSegmentId: number | null;
   onSeek: (ms: number) => void;
   onHearWord: (startMs: number, endMs: number) => void;
   onSaveSegment: (segmentId: number, text: string) => void;
   onRename: (key: string, name: string) => void;
   onReprocess: (key: string, segmentIds: number[]) => void;
+  onToggleBookmark: (segmentId: number) => void;
 }
 
 /** Tabla Hablante | Texto. El texto es un editor enriquecido por turno; el
@@ -21,31 +23,50 @@ export function TranscriptTable({
   threshold,
   speakers,
   reprocessing,
+  bookmarkSegmentId,
   onSeek,
   onHearWord,
   onSaveSegment,
   onRename,
   onReprocess,
+  onToggleBookmark,
 }: Props) {
   return (
     <div className="rw-table">
-      {turns.map((t) => (
-        <div className="rw-row" key={t.key}>
+      {turns.map((t) => {
+        const marked = t.segments.some((s) => s.id === bookmarkSegmentId);
+        return (
+        <div
+          className={`rw-row${marked ? " is-bookmarked" : ""}`}
+          key={t.key}
+          id={marked ? "bookmark-anchor" : undefined}
+        >
           <div className="rw-speaker">
             <SpeakerLabel
               speakerKey={t.speaker}
               name={speakers[t.speaker] ?? t.speaker}
               onRename={onRename}
             />
-            <button
-              className="turn__reprocess"
-              type="button"
-              disabled={reprocessing === t.key}
-              title="Re-transcribir este tramo en aislamiento (recupera alucinaciones)"
-              onClick={() => onReprocess(t.key, t.segments.map((s) => s.id))}
-            >
-              {reprocessing === t.key ? "Procesando…" : "⟳ Re-procesar"}
-            </button>
+            <div className="rw-speaker__tools">
+              <button
+                className={`turn__bookmark${marked ? " is-on" : ""}`}
+                type="button"
+                aria-pressed={marked}
+                title={marked ? "Quitar el marcador" : "Marcar aquí para retomar después"}
+                onClick={() => onToggleBookmark(t.segments[0].id)}
+              >
+                {marked ? "🔖 Aquí lo dejé" : "🔖 Marcar"}
+              </button>
+              <button
+                className="turn__reprocess"
+                type="button"
+                disabled={reprocessing === t.key}
+                title="Re-transcribir este tramo en aislamiento (recupera alucinaciones)"
+                onClick={() => onReprocess(t.key, t.segments.map((s) => s.id))}
+              >
+                {reprocessing === t.key ? "Procesando…" : "⟳ Re-procesar"}
+              </button>
+            </div>
             {reprocessing === t.key && (
               <div
                 className="reproc-bar"
@@ -65,7 +86,8 @@ export function TranscriptTable({
             onSaveSegment={onSaveSegment}
           />
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

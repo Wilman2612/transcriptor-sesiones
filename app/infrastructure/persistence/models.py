@@ -18,6 +18,8 @@ class SessionModel(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     # JSON: {"Hablante 1": "Alcalde", "Hablante 2": "Secretaria general", ...}
     speaker_names_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Segmento donde el revisor dejó la revisión (para retomar). NULL = sin marcador.
+    bookmark_segment_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     chunks: Mapped[list["ChunkModel"]] = relationship(back_populates="session", cascade="all, delete-orphan")
     segments: Mapped[list["SegmentModel"]] = relationship(back_populates="session", cascade="all, delete-orphan")

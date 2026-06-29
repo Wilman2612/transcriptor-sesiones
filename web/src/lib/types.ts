@@ -30,6 +30,7 @@ export interface ReviewData {
   doubts_left: number;
   segments: Segment[];
   speakers: Record<string, string>; // {"Hablante 1": "Alcalde", ...}
+  bookmark_segment_id?: number | null; // dónde se dejó la revisión
 }
 
 export interface SessionSummary {

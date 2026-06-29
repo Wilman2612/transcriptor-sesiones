@@ -11,4 +11,6 @@ export interface IReviewRepository {
   reprocess(segmentIds: number[]): Promise<WordCorrectionResult>;
   /** Asigna un nombre/cargo real a un hablante (vacío = quitar). */
   setSpeakerName(sessionId: number, key: string, name: string): Promise<void>;
+  /** Guarda dónde se dejó la revisión (null = quitar el marcador). */
+  setBookmark(sessionId: number, segmentId: number | null): Promise<void>;
 }

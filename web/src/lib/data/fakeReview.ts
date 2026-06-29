@@ -120,4 +120,8 @@ export class FakeReviewAdapter implements IReviewRepository {
     if (name.trim()) this.data.speakers[key] = name.trim();
     else delete this.data.speakers[key];
   }
+
+  async setBookmark(_sessionId: number, segmentId: number | null) {
+    this.data.bookmark_segment_id = segmentId;
+  }
 }

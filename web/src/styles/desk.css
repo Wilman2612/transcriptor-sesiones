@@ -438,6 +438,26 @@
   .reproc-bar__fill { animation: none; width: 100%; opacity: .55; }
 }
 
+/* ── Marcador para retomar la revisión ────────────────────────────────────── */
+.rw-speaker__tools { display: flex; flex-wrap: wrap; gap: .35rem; }
+.turn__bookmark {
+  font-family: 'Inter', sans-serif; font-size: .68rem; color: var(--ink-soft);
+  background: none; border: 1px solid var(--rule); border-radius: 99px;
+  padding: .1rem .5rem; cursor: pointer; opacity: 0; transition: opacity .12s;
+}
+.rw-row:hover .turn__bookmark { opacity: 1; }
+.turn__bookmark:hover { background: var(--paper-edge); }
+.turn__bookmark.is-on {
+  opacity: 1; color: var(--accent);
+  border-color: var(--accent-soft); background: var(--accent-soft);
+}
+.rw-row.is-bookmarked { position: relative; }
+.rw-row.is-bookmarked::before {
+  content: ""; position: absolute; left: -12px; top: 0; bottom: 0; width: 3px;
+  background: var(--accent); border-radius: 99px;
+}
+.btn--bookmark { border-color: var(--accent-soft); color: var(--accent); }
+
 /* ── Etiqueta de hablante editable ────────────────────────────────────────────── */
 .turn__speaker-btn {
   font-family: inherit; font-weight: 600; font-size: .82rem; color: var(--ink);

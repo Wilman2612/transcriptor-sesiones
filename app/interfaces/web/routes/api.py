@@ -29,6 +29,7 @@ from app.infrastructure.persistence.repositories import (
     SqlSessionRepository,
 )
 from app.interfaces.web.api_schemas import (
+    BookmarkIn,
     CreatedSessionOut,
     GlossaryTermIn,
     GlossaryTermOut,
@@ -146,6 +147,7 @@ def review_data(session_id: int, db: DbSession = Depends(get_db)):
         total_doubts=sum(v.total_doubts for v in views),
         doubts_left=sum(v.doubts_left for v in views),
         speakers=speakers,
+        bookmark_segment_id=m.bookmark_segment_id if m else None,
         segments=[
             SegmentOut(
                 id=v.id, start_ms=v.start_ms, speaker=v.speaker,
@@ -175,6 +177,16 @@ def set_speaker_name(session_id: int, body: SpeakerNameIn, db: DbSession = Depen
     else:
         names.pop(body.key, None)
     m.speaker_names_json = json.dumps(names, ensure_ascii=False) if names else None
+    db.commit()
+
+
+@router.post("/sessions/{session_id}/bookmark", status_code=204)
+def set_bookmark(session_id: int, body: BookmarkIn, db: DbSession = Depends(get_db)):
+    """Guarda (o quita, con segment_id=None) el punto donde se dejó la revisión."""
+    m = db.get(SessionModel, session_id)
+    if not m:
+        raise HTTPException(404, "Sesión no encontrada")
+    m.bookmark_segment_id = body.segment_id
     db.commit()
 
 

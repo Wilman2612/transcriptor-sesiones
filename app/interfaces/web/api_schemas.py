@@ -35,11 +35,16 @@ class ReviewOut(BaseModel):
     doubts_left: int
     segments: list[SegmentOut]
     speakers: dict[str, str] = {}  # {"Hablante 1": "Alcalde", ...}
+    bookmark_segment_id: int | None = None  # dónde se dejó la revisión
 
 
 class SpeakerNameIn(BaseModel):
     key: str   # "Hablante 1"
     name: str  # "" = quitar el nombre
+
+
+class BookmarkIn(BaseModel):
+    segment_id: int | None = None  # None = quitar el marcador
 
 
 class SessionOut(BaseModel):
