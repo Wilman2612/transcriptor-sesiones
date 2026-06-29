@@ -1,5 +1,24 @@
+import os
+import subprocess
+import tempfile
+
 from app.application.ports import TranscribedSegment, TranscribedWord, TranscriberPort
 from app.config import settings
+
+# Parámetros de decodificación anti-alucinación. El default de faster-whisper
+# escala la temperatura hasta 1.0 cuando un segmento "falla", y a esa temperatura
+# sobre audio confuso inventa texto fluido (las fugas al inglés del 5:23).
+# Además condition_on_previous_text arrastra esa alucinación hacia adelante.
+DECODE_PARAMS = dict(
+    language=settings.whisper_language,
+    word_timestamps=True,
+    vad_filter=True,
+    condition_on_previous_text=False,           # corta la cascada de alucinación
+    temperature=[0.0, 0.2, 0.4],                # techo bajo: si falla, baja confianza, no invento
+    compression_ratio_threshold=2.2,            # rechaza texto repetitivo/inventado
+    log_prob_threshold=-0.8,                    # rechaza segmentos poco probables
+    no_speech_threshold=0.6,
+)
 
 
 def _detect_device() -> tuple[str, str]:
@@ -9,7 +28,6 @@ def _detect_device() -> tuple[str, str]:
         return "cuda", "float16"
     if forced == "cpu":
         return "cpu", "int8"
-    # auto: intentar CUDA, caer a CPU
     try:
         import ctranslate2
         supported = ctranslate2.get_supported_compute_types("cuda")
@@ -18,6 +36,15 @@ def _detect_device() -> tuple[str, str]:
     except Exception:
         pass
     return "cpu", "int8"
+
+
+def _word(w, offset_ms: int) -> TranscribedWord:
+    return TranscribedWord(
+        text=w.word,
+        confidence=max(0.0, min(1.0, w.probability)),
+        start_ms=offset_ms + int(w.start * 1000),
+        end_ms=offset_ms + int(w.end * 1000),
+    )
 
 
 class FasterWhisperAdapter(TranscriberPort):
@@ -40,33 +67,14 @@ class FasterWhisperAdapter(TranscriberPort):
 
     def transcribe(self, audio_path: str, chunk_offset_ms: int = 0) -> list[TranscribedSegment]:
         model = self._get_model()
-        segments_iter, _ = model.transcribe(
-            audio_path,
-            language=settings.whisper_language,
-            word_timestamps=True,
-            vad_filter=True,
-        )
+        segments_iter, _ = model.transcribe(audio_path, **DECODE_PARAMS)
 
         result = []
         for seg in segments_iter:
-            # avg_logprob en [-inf, 0]; convertir a [0, 1]
             confidence = max(0.0, min(1.0, 1.0 + seg.avg_logprob / 5.0))
-            # penalizar si probabilidad de silencio es alta
             if seg.no_speech_prob > 0.6:
                 confidence *= 0.3
-
-            # Confianza por palabra: word.probability ya viene en [0, 1]
-            words = []
-            for w in seg.words or []:
-                words.append(
-                    TranscribedWord(
-                        text=w.word,
-                        confidence=max(0.0, min(1.0, w.probability)),
-                        start_ms=chunk_offset_ms + int(w.start * 1000),
-                        end_ms=chunk_offset_ms + int(w.end * 1000),
-                    )
-                )
-
+            words = [_word(w, chunk_offset_ms) for w in (seg.words or [])]
             result.append(
                 TranscribedSegment(
                     start_ms=chunk_offset_ms + int(seg.start * 1000),
@@ -77,3 +85,27 @@ class FasterWhisperAdapter(TranscriberPort):
                 )
             )
         return result
+
+    def transcribe_region(self, audio_path: str, start_ms: int, end_ms: int) -> list[TranscribedWord]:
+        """Segunda pasada: re-transcribe SOLO el tramo [start_ms, end_ms] en
+        aislamiento (resetea el contexto que causó la alucinación) y devuelve
+        las palabras con tiempos absolutos de la sesión."""
+        model = self._get_model()
+        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        tmp.close()
+        try:
+            subprocess.run(
+                ["ffmpeg", "-y", "-ss", f"{start_ms/1000:.3f}", "-t", f"{(end_ms-start_ms)/1000:.3f}",
+                 "-i", audio_path, "-ar", "16000", "-ac", "1", tmp.name],
+                capture_output=True, check=True,
+            )
+            segments_iter, _ = model.transcribe(tmp.name, **DECODE_PARAMS)
+            words: list[TranscribedWord] = []
+            for seg in segments_iter:
+                words.extend(_word(w, start_ms) for w in (seg.words or []))
+            return words
+        finally:
+            try:
+                os.unlink(tmp.name)
+            except OSError:
+                pass

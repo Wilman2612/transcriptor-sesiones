@@ -8,11 +8,13 @@ interface Props {
   turn: TurnT;
   threshold: number;
   textSegId: number | null;
+  busy?: boolean;
   onSeek?: (ms: number) => void;
   onPickWord?: (segmentId: number, word: WordT, rect: DOMRect) => void;
   onEditPhrase: (segmentId: number) => void;
   onSavePhrase: (segmentId: number, text: string) => void;
   onCancelPhrase: () => void;
+  onReprocess?: () => void;
 }
 
 function phraseText(seg: Segment): string {
@@ -25,11 +27,13 @@ export function Turn({
   turn,
   threshold,
   textSegId,
+  busy,
   onSeek,
   onPickWord,
   onEditPhrase,
   onSavePhrase,
   onCancelPhrase,
+  onReprocess,
 }: Props) {
   let hadDoubt = false;
   let left = 0;
@@ -50,6 +54,17 @@ export function Turn({
           <span className="seg__speaker-glyph" />
           {turn.speaker}
         </span>
+        {onReprocess && (
+          <button
+            className="turn__reprocess"
+            type="button"
+            disabled={busy}
+            title="Re-transcribir este tramo en aislamiento (recupera alucinaciones)"
+            onClick={onReprocess}
+          >
+            {busy ? "Procesando…" : "⟳ Re-procesar"}
+          </button>
+        )}
       </div>
 
       <div className="turn__phrases">

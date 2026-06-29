@@ -28,6 +28,7 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
   const [threshold, setThreshold] = useState(defaultThreshold);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [textSeg, setTextSeg] = useState<number | null>(null);
+  const [reprocessing, setReprocessing] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const stopAt = useRef<number | null>(null);
 
@@ -93,6 +94,17 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
       ),
     }));
     setTextSeg(null);
+  };
+
+  const reprocessTurn = async (key: string, segmentIds: number[]) => {
+    setReprocessing(key);
+    try {
+      await repo.reprocess(segmentIds);
+      const fresh = await repo.getReview(review.session_id);
+      setReview(fresh);
+    } finally {
+      setReprocessing(null);
+    }
   };
 
   const exportDocx = () => exportUrl && window.open(exportUrl, "_blank");
@@ -167,11 +179,13 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
             turn={t}
             threshold={threshold}
             textSegId={textSeg}
+            busy={reprocessing === t.key}
             onSeek={(ms) => playRange(ms, null)}
             onPickWord={(segmentId, word, rect) => setEditing({ segmentId, word, rect })}
             onEditPhrase={(segId) => setTextSeg(segId)}
             onSavePhrase={savePhrase}
             onCancelPhrase={() => setTextSeg(null)}
+            onReprocess={() => reprocessTurn(t.key, t.segments.map((s) => s.id))}
           />
         ))}
       </div>

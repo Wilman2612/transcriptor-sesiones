@@ -405,3 +405,13 @@
   width: 1.3rem; height: 1.3rem; border-radius: 50%; cursor: pointer; line-height: 1;
 }
 .glossary__del:hover { background: var(--doubt-high-wash); color: var(--doubt-high); }
+
+/* ── Botón re-procesar tramo ──────────────────────────────────────────────────── */
+.turn__reprocess {
+  display: block; margin-top: .5rem;
+  font-family: 'Inter', sans-serif; font-size: .72rem; color: var(--accent);
+  background: none; border: 1px solid var(--accent-soft); border-radius: 99px;
+  padding: .2rem .55rem; cursor: pointer;
+}
+.turn__reprocess:hover:not(:disabled) { background: var(--accent-soft); }
+.turn__reprocess:disabled { opacity: .6; cursor: default; }

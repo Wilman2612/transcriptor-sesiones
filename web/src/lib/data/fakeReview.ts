@@ -110,4 +110,8 @@ export class FakeReviewAdapter implements IReviewRepository {
     if (s) s.override_text = text.trim() || null;
     return { ok: true, session_doubts_left: this.data.doubts_left };
   }
+
+  async reprocess() {
+    return { ok: true, session_doubts_left: this.data.doubts_left };
+  }
 }

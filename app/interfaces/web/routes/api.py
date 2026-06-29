@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from pydantic import BaseModel
 from sqlalchemy.orm import Session as DbSession
 
 from app.application.use_cases.correct_word import (
@@ -162,6 +163,22 @@ def correct_word(segment_id: int, body: WordCorrectionIn, db: DbSession = Depend
         raise HTTPException(404, "Segmento sin palabras")
     except WordIndexOutOfRange:
         raise HTTPException(400, "Índice fuera de rango")
+    return WordCorrectionOut(ok=True, session_doubts_left=left)
+
+
+class ReprocessIn(BaseModel):
+    segment_ids: list[int]
+
+
+@router.post("/reprocess", response_model=WordCorrectionOut)
+def reprocess(body: ReprocessIn, db: DbSession = Depends(get_db)):
+    """Segunda pasada sobre un tramo: re-transcribe en aislamiento y reemplaza."""
+    from app.application.use_cases.reprocess import CannotReprocess, reprocess_segments
+
+    try:
+        left = reprocess_segments(db, body.segment_ids)
+    except CannotReprocess as e:
+        raise HTTPException(400, str(e))
     return WordCorrectionOut(ok=True, session_doubts_left=left)
 
 

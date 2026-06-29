@@ -7,4 +7,6 @@ export interface IReviewRepository {
   correctWord(segmentId: number, idx: number, text: string): Promise<WordCorrectionResult>;
   /** Reescribe una frase entera como texto libre (vacío = revertir a palabras). */
   rewriteSegment(segmentId: number, text: string): Promise<WordCorrectionResult>;
+  /** Segunda pasada: re-transcribe un tramo en aislamiento y lo reemplaza. */
+  reprocess(segmentIds: number[]): Promise<WordCorrectionResult>;
 }
