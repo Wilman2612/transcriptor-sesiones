@@ -1,8 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { DoubtPopover } from "../DoubtPopover";
 import { ErrorNote, LoadingNote } from "../Notes";
-import { Segment } from "../Segment";
-import { HAPPY_SEGMENTS } from "../../lib/data/fakeReview";
 
 const frame = (Story: React.ComponentType) => (
   <div style={{ maxWidth: 1180, margin: "0 auto", padding: "1.5rem" }}>
@@ -17,22 +14,6 @@ const meta: Meta = {
 };
 export default meta;
 type Story = StoryObj;
-
-/** Decidiendo sobre una palabra: input + oír + confirmar, anclado a la palabra. */
-export const DoubtFocused: Story = {
-  render: () => (
-    <div className="desk" style={{ position: "relative", minHeight: 220 }}>
-      <Segment segment={HAPPY_SEGMENTS[2]} threshold={0.8} />
-      <DoubtPopover
-        initialText="Medina"
-        rect={{ bottom: 150, left: 360, top: 130 } as DOMRect}
-        onHear={() => {}}
-        onCommit={() => {}}
-        onCancel={() => {}}
-      />
-    </div>
-  ),
-};
 
 /** Transcribiendo: progreso real, sin spinner indefinido. */
 export const Loading: Story = {

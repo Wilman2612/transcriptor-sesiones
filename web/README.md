@@ -1,32 +1,28 @@
-# React + TypeScript + Vite
+# Frontend — Municipal Session Transcription Tool
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite frontend, decoupled from the FastAPI backend through the REST `/api`
+contract. See the [root README](../README.md) for the full project.
 
-Currently, two official plugins are available:
+## Scripts
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev          # Vite dev server (proxies /api to the backend on :8000)
+npm run build        # type-check + production build
+npm run storybook    # component gallery on http://localhost:6006
+npm run lint         # oxlint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## How it's structured
+
+- `src/lib/data/` — the **DAL**: `IReviewRepository` / `ISessionsRepository` interfaces, with a
+  `Real*` adapter (hits `/api`) and a `Fake*` adapter (in-memory, deterministic) for Storybook
+  and tests.
+- `src/components/` — presentational + container components. Each meaningful UI state has a
+  Storybook story in `__stories__/` rendered against the fake adapter, so the UI is built and
+  reviewed without a running backend.
+- `src/editor/` — the TipTap rich-text editor: a custom word-metadata mark and a confidence
+  "doubt" decoration driven by the threshold slider.
+- `src/pages/` — routed screens (upload, progress, review, glossary, speakers).
+
+All sample data is fictional — no real names. See the root README's Privacy section.
