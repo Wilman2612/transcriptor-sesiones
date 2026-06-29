@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from "react";
 
 interface Props {
   initialText: string;
+  confidence?: number;
   rect: DOMRect;
   onHear: () => void;
   onCommit: (text: string) => void;
   onCancel: () => void;
 }
 
-/** Decisión sobre una palabra dudosa: corregir el texto, oírla o confirmarla. */
-export function DoubtPopover({ initialText, rect, onHear, onCommit, onCancel }: Props) {
+/** Decisión sobre una palabra: corregir el texto, oírla o confirmarla. */
+export function DoubtPopover({ initialText, confidence, rect, onHear, onCommit, onCancel }: Props) {
   const [text, setText] = useState(initialText);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +42,12 @@ export function DoubtPopover({ initialText, rect, onHear, onCommit, onCancel }: 
         role="dialog"
         aria-label="Corregir palabra"
       >
-        <span className="pop__label">Corrige la palabra o confírmala:</span>
+        <span className="pop__label">
+          Corrige la palabra o confírmala
+          {confidence != null && (
+            <span className="pop__conf"> · confianza {Math.round(confidence * 100)}%</span>
+          )}
+        </span>
         <input
           ref={inputRef}
           className="w-edit"

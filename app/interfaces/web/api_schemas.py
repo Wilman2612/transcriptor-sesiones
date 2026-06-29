@@ -5,10 +5,12 @@ from pydantic import BaseModel
 
 class WordOut(BaseModel):
     text: str
-    kind: str  # plain | doubt-mid | doubt-high | sealed
     idx: int
     start_ms: int
     end_ms: int
+    confidence: float   # 0-1 cruda; el cliente decide el umbral con el slider
+    eligible: bool      # candidata a duda a algún umbral (no es palabra funcional)
+    sealed: bool        # ya confirmada/corregida
 
 
 class SegmentOut(BaseModel):

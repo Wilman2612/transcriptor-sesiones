@@ -7,13 +7,21 @@ import type { ReviewData, Segment, Word, WordKind } from "../types";
 
 type WordSpec = [text: string, kind: WordKind];
 
+// Traduce el "kind" deseado (para los fixtures) a confianza/elegibilidad/sellado.
+const SPEC: Record<WordKind, { confidence: number; eligible: boolean; sealed: boolean }> = {
+  plain: { confidence: 0.99, eligible: false, sealed: false },
+  "doubt-mid": { confidence: 0.65, eligible: true, sealed: false },
+  "doubt-high": { confidence: 0.3, eligible: true, sealed: false },
+  sealed: { confidence: 0.5, eligible: true, sealed: true },
+};
+
 function seg(id: number, startMs: number, speaker: string, specs: WordSpec[]): Segment {
   const words: Word[] = specs.map(([text, kind], i) => ({
     text,
-    kind,
     idx: i,
     start_ms: startMs + i * 400,
     end_ms: startMs + i * 400 + 350,
+    ...SPEC[kind],
   }));
   const total = specs.filter(([, k]) => k !== "plain").length;
   const left = specs.filter(([, k]) => k === "doubt-mid" || k === "doubt-high").length;
@@ -90,7 +98,7 @@ export class FakeReviewAdapter implements IReviewRepository {
   async correctWord(segmentId: number, idx: number, text: string) {
     const s = this.data.segments.find((x) => x.id === segmentId);
     if (s && s.words[idx]) {
-      s.words[idx] = { ...s.words[idx], text, kind: "sealed" };
+      s.words[idx] = { ...s.words[idx], text, sealed: true };
       s.doubts_left = Math.max(0, s.doubts_left - 1);
       this.data.doubts_left = Math.max(0, this.data.doubts_left - 1);
     }

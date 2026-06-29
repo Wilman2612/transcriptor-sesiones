@@ -24,27 +24,31 @@ _FUNCTION_WORDS = {
 }
 
 
-def is_doubt(text: str, confidence: float, low: float, mid: float, floor: float) -> bool:
-    """Una palabra es 'duda' si su confianza es baja Y vale la pena revisarla.
-    Las palabras funcionales cortas con confianza no-catastrófica se omiten:
-    son ruido de alineación, no errores reales."""
-    if confidence >= mid:
-        return False
+def is_eligible(text: str, confidence: float, floor: float) -> bool:
+    """¿Esta palabra puede ser una duda a ALGÚN umbral? Las palabras funcionales
+    cortas no (son ruido de alineación), salvo confianza catastrófica.
+    El umbral concreto lo decide el cliente con el slider; esto es independiente."""
     if confidence < floor:
-        return True  # catastrófica: siempre duda, aunque sea corta
+        return True
     w = text.strip().lower().strip(".,;:!?¿¡()\"'»«—-")
-    if len(w) <= 2 or w in _FUNCTION_WORDS:
-        return False
-    return True
+    return len(w) > 2 and w not in _FUNCTION_WORDS
+
+
+def is_doubt(text: str, confidence: float, low: float, mid: float, floor: float) -> bool:
+    """Una palabra es 'duda' a este umbral si su confianza es baja Y es elegible."""
+    return confidence < mid and is_eligible(text, confidence, floor)
 
 
 @dataclass
 class RenderedWord:
     text: str
-    kind: str       # plain | doubt-mid | doubt-high | sealed
+    kind: str       # plain | doubt-mid | doubt-high | sealed  (para la UI HTML)
     idx: int
     start_ms: int
     end_ms: int
+    confidence: float = 1.0   # cruda 0-1 (para el slider en el cliente React)
+    eligible: bool = False    # candidata a duda a algún umbral
+    sealed: bool = False      # ya confirmada/corregida
 
 
 @dataclass
@@ -74,7 +78,8 @@ def classify_segment(seg, low: float = None, mid: float = None) -> SegmentView:
     if seg.words:
         for i, w in enumerate(seg.words):
             text = w.text.strip()
-            if is_doubt(text, w.confidence, low, mid, floor):
+            eligible = is_eligible(text, w.confidence, floor)
+            if eligible and w.confidence < mid:
                 total += 1
                 if w.resolved:
                     kind = "sealed"
@@ -82,9 +87,12 @@ def classify_segment(seg, low: float = None, mid: float = None) -> SegmentView:
                     left += 1
                     kind = "doubt-high" if w.confidence < low else "doubt-mid"
             else:
-                kind = "plain"
+                kind = "sealed" if w.resolved else "plain"
             rwords.append(
-                RenderedWord(text=text, kind=kind, idx=i, start_ms=w.start_ms, end_ms=w.end_ms)
+                RenderedWord(
+                    text=text, kind=kind, idx=i, start_ms=w.start_ms, end_ms=w.end_ms,
+                    confidence=round(w.confidence, 4), eligible=eligible, sealed=w.resolved,
+                )
             )
         plain = " ".join(r.text for r in rwords)
     else:

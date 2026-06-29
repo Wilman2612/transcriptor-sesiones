@@ -139,8 +139,8 @@ def review_data(session_id: int, db: DbSession = Depends(get_db)):
                 id=v.id, start_ms=v.start_ms, speaker=v.speaker,
                 total_doubts=v.total_doubts, doubts_left=v.doubts_left,
                 words=[
-                    {"text": w.text, "kind": w.kind, "idx": w.idx,
-                     "start_ms": w.start_ms, "end_ms": w.end_ms}
+                    {"text": w.text, "idx": w.idx, "start_ms": w.start_ms, "end_ms": w.end_ms,
+                     "confidence": w.confidence, "eligible": w.eligible, "sealed": w.sealed}
                     for w in v.rwords
                 ],
             )

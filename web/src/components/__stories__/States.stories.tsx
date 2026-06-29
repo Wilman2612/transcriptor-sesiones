@@ -22,7 +22,7 @@ type Story = StoryObj;
 export const DoubtFocused: Story = {
   render: () => (
     <div className="desk" style={{ position: "relative", minHeight: 220 }}>
-      <Segment segment={HAPPY_SEGMENTS[2]} />
+      <Segment segment={HAPPY_SEGMENTS[2]} threshold={0.8} />
       <DoubtPopover
         initialText="Medina"
         rect={{ bottom: 150, left: 360, top: 130 } as DOMRect}

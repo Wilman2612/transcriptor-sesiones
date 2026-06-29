@@ -4,10 +4,12 @@ export type WordKind = "plain" | "doubt-mid" | "doubt-high" | "sealed";
 
 export interface Word {
   text: string;
-  kind: WordKind;
   idx: number;
   start_ms: number;
   end_ms: number;
+  confidence: number; // 0-1 cruda
+  eligible: boolean; // candidata a duda a algún umbral
+  sealed: boolean; // ya confirmada/corregida
 }
 
 export interface Segment {

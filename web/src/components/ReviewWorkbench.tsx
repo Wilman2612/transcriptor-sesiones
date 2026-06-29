@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { IReviewRepository } from "../lib/data/IReviewRepository";
 import type { ReviewData, Word as WordT } from "../lib/types";
+import { countDoubts } from "../lib/confidence";
 import { Segment } from "./Segment";
 import { Tally } from "./Tally";
 import { DoubtPopover } from "./DoubtPopover";
@@ -11,6 +12,7 @@ interface Props {
   repo: IReviewRepository;
   audioUrl?: string;
   exportUrl?: string;
+  defaultThreshold?: number;
 }
 
 interface Editing {
@@ -19,12 +21,15 @@ interface Editing {
   rect: DOMRect;
 }
 
-/** Escritorio de corrección: el contenedor con la interacción de revisión. */
-export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
+/** Escritorio de corrección: revisión con umbral ajustable y edición libre. */
+export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThreshold = 0.8 }: Props) {
   const [review, setReview] = useState<ReviewData>(initial);
+  const [threshold, setThreshold] = useState(defaultThreshold);
   const [editing, setEditing] = useState<Editing | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const stopAt = useRef<number | null>(null);
+
+  const counts = useMemo(() => countDoubts(review, threshold), [review, threshold]);
 
   const playRange = (startMs: number, endMs: number | null) => {
     const a = audioRef.current;
@@ -33,7 +38,6 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
     stopAt.current = endMs != null ? endMs / 1000 : null;
     void a.play();
   };
-
   const onTimeUpdate = () => {
     const a = audioRef.current;
     if (a && stopAt.current != null && a.currentTime >= stopAt.current) {
@@ -50,9 +54,9 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
       const segments = prev.segments.map((s) => {
         if (s.id !== segmentId) return s;
         const words = s.words.map((w) =>
-          w.idx === word.idx ? { ...w, text, kind: "sealed" as const } : w,
+          w.idx === word.idx ? { ...w, text, sealed: true } : w,
         );
-        return { ...s, words, doubts_left: Math.max(0, s.doubts_left - 1) };
+        return { ...s, words };
       });
       return { ...prev, segments, doubts_left: res.session_doubts_left };
     });
@@ -62,9 +66,8 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
   const goNextDoubt = () => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>(".w--doubt"));
     if (!nodes.length) return;
-    const threshold = window.scrollY + 120;
-    const next =
-      nodes.find((n) => window.scrollY + n.getBoundingClientRect().top > threshold) ?? nodes[0];
+    const y = window.scrollY + 120;
+    const next = nodes.find((n) => window.scrollY + n.getBoundingClientRect().top > y) ?? nodes[0];
     next.scrollIntoView({ behavior: "smooth", block: "center" });
     window.setTimeout(() => {
       const segEl = next.closest<HTMLElement>("[data-seg-id]");
@@ -77,8 +80,8 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
   };
 
   const exportDocx = () => exportUrl && window.open(exportUrl, "_blank");
-  const hasDoubts = review.total_doubts > 0;
-  const allResolved = hasDoubts && review.doubts_left === 0;
+  const hasDoubts = counts.total > 0;
+  const allResolved = hasDoubts && counts.left === 0;
 
   return (
     <div className="desk">
@@ -87,18 +90,11 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
           <p className="desk__eyebrow">Acta de sesión · revisión</p>
           <h1 className="desk__title">{review.name}</h1>
           <p className="desk__sub">
-            {review.total_segments} intervenciones ·{" "}
-            {hasDoubts ? (
-              <>
-                La transcripción está lista. <strong>Haz clic en las palabras subrayadas</strong>{" "}
-                para revisarlas y corregirlas.
-              </>
-            ) : (
-              "La transcripción salió con alta confianza en todo el audio."
-            )}
+            {review.total_segments} intervenciones · Haz clic en <strong>cualquier palabra</strong>{" "}
+            para editarla; las marcadas son las de baja confianza.
           </p>
         </div>
-        <Tally doubtsLeft={review.doubts_left} totalDoubts={review.total_doubts} />
+        <Tally doubtsLeft={counts.left} totalDoubts={counts.total} />
       </div>
 
       <div className="actions">
@@ -110,28 +106,42 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
             Exportar DOCX
           </a>
         )}
-        <a className="btn btn--ghost" href="/">
+        <a className="btn btn--ghost" href="/app/">
           ← Sesiones
         </a>
-        {hasDoubts && review.doubts_left > 0 && (
+        {counts.left > 0 && (
           <button className="btn btn--next" type="button" onClick={goNextDoubt}>
             Siguiente duda ↓
           </button>
         )}
       </div>
 
+      {/* Slider: mueve el nivel de confianza por debajo del cual se resalta. */}
+      <div className="threshold">
+        <label htmlFor="thr" className="threshold__label">
+          Resaltar palabras con confianza menor a:{" "}
+          <strong>{Math.round(threshold * 100)}%</strong>
+        </label>
+        <input
+          id="thr"
+          className="threshold__slider"
+          type="range"
+          min={0.3}
+          max={0.98}
+          step={0.01}
+          value={threshold}
+          onChange={(e) => setThreshold(Number(e.target.value))}
+        />
+        <span className="threshold__hint">
+          {counts.left} marcadas · sube para revisar más, baja para ver solo las más dudosas
+        </span>
+      </div>
+
       {!hasDoubts && <EmptyNote onExport={exportDocx} />}
-      {allResolved && <ResolvedNote count={review.total_doubts} onExport={exportDocx} />}
+      {allResolved && <ResolvedNote count={counts.total} onExport={exportDocx} />}
 
       {audioUrl && (
-        <audio
-          ref={audioRef}
-          className="player"
-          controls
-          preload="none"
-          src={audioUrl}
-          onTimeUpdate={onTimeUpdate}
-        />
+        <audio ref={audioRef} className="player" controls preload="none" src={audioUrl} onTimeUpdate={onTimeUpdate} />
       )}
 
       <div className="acta">
@@ -139,6 +149,7 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
           <Segment
             key={s.id}
             segment={s}
+            threshold={threshold}
             onSeek={(ms) => playRange(ms, null)}
             onPickWord={(segmentId, word, rect) => setEditing({ segmentId, word, rect })}
           />
@@ -148,6 +159,7 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl }: Props) {
       {editing && (
         <DoubtPopover
           initialText={editing.word.text}
+          confidence={editing.word.confidence}
           rect={editing.rect}
           onHear={() => playRange(editing.word.start_ms, editing.word.end_ms)}
           onCommit={commit}
