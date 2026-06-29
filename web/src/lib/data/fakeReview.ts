@@ -80,6 +80,7 @@ export function reviewFixture(name: "happy" | "empty" | "resolved"): ReviewData 
     total_segments: segments.length,
     ...totals(segments),
     segments,
+    speakers: {},
   };
 }
 
@@ -113,5 +114,10 @@ export class FakeReviewAdapter implements IReviewRepository {
 
   async reprocess() {
     return { ok: true, session_doubts_left: this.data.doubts_left };
+  }
+
+  async setSpeakerName(_sessionId: number, key: string, name: string) {
+    if (name.trim()) this.data.speakers[key] = name.trim();
+    else delete this.data.speakers[key];
   }
 }

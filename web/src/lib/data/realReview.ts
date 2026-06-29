@@ -44,4 +44,12 @@ export class RealReviewAdapter implements IReviewRepository {
     if (!r.ok) throw new Error(`No se pudo re-procesar (${r.status})`);
     return r.json();
   }
+
+  async setSpeakerName(sessionId: number, key: string, name: string): Promise<void> {
+    await fetch(`${this.baseUrl}/api/sessions/${sessionId}/speaker`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, name }),
+    });
+  }
 }

@@ -3,18 +3,21 @@ import type { Segment, Word as WordT } from "../lib/types";
 import { msToStr } from "../lib/format";
 import { Word } from "./Word";
 import { PhraseEditor } from "./PhraseEditor";
+import { SpeakerLabel } from "./SpeakerLabel";
 
 interface Props {
   turn: TurnT;
   threshold: number;
   textSegId: number | null;
   busy?: boolean;
+  speakerName?: string;
   onSeek?: (ms: number) => void;
   onPickWord?: (segmentId: number, word: WordT, rect: DOMRect) => void;
   onEditPhrase: (segmentId: number) => void;
   onSavePhrase: (segmentId: number, text: string) => void;
   onCancelPhrase: () => void;
   onReprocess?: () => void;
+  onRename?: (key: string, name: string) => void;
 }
 
 function phraseText(seg: Segment): string {
@@ -28,12 +31,14 @@ export function Turn({
   threshold,
   textSegId,
   busy,
+  speakerName,
   onSeek,
   onPickWord,
   onEditPhrase,
   onSavePhrase,
   onCancelPhrase,
   onReprocess,
+  onRename,
 }: Props) {
   let hadDoubt = false;
   let left = 0;
@@ -52,7 +57,11 @@ export function Turn({
       <div className="turn__meta">
         <span className="turn__speaker">
           <span className="seg__speaker-glyph" />
-          {turn.speaker}
+          {onRename ? (
+            <SpeakerLabel speakerKey={turn.speaker} name={speakerName ?? turn.speaker} onRename={onRename} />
+          ) : (
+            (speakerName ?? turn.speaker)
+          )}
         </span>
         {onReprocess && (
           <button

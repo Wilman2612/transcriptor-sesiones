@@ -2,6 +2,7 @@
 API JSON (/api) que consume el frontend React. Desacopla la UI del backend:
 reusa los mismos casos de uso y repositorios que la interfaz HTML.
 """
+import json
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -35,6 +36,7 @@ from app.interfaces.web.api_schemas import (
     SegmentOut,
     SegmentTextIn,
     SessionOut,
+    SpeakerNameIn,
     WordCorrectionIn,
     WordCorrectionOut,
 )
@@ -133,12 +135,16 @@ def review_data(session_id: int, db: DbSession = Depends(get_db)):
     segments = SqlSegmentRepository(db).list_by_session(session_id)
     views = [classify_segment(seg) for seg in segments]
 
+    m = db.get(SessionModel, session_id)
+    speakers = json.loads(m.speaker_names_json) if m and m.speaker_names_json else {}
+
     return ReviewOut(
         session_id=session.id,
         name=session.name,
         total_segments=len(views),
         total_doubts=sum(v.total_doubts for v in views),
         doubts_left=sum(v.doubts_left for v in views),
+        speakers=speakers,
         segments=[
             SegmentOut(
                 id=v.id, start_ms=v.start_ms, speaker=v.speaker,
@@ -153,6 +159,22 @@ def review_data(session_id: int, db: DbSession = Depends(get_db)):
             for v in views
         ],
     )
+
+
+@router.post("/sessions/{session_id}/speaker", status_code=204)
+def set_speaker_name(session_id: int, body: SpeakerNameIn, db: DbSession = Depends(get_db)):
+    """Asigna un nombre/cargo real a un hablante (Hablante N). Vacío = quitarlo."""
+    m = db.get(SessionModel, session_id)
+    if not m:
+        raise HTTPException(404, "Sesión no encontrada")
+    names = json.loads(m.speaker_names_json) if m.speaker_names_json else {}
+    name = body.name.strip()
+    if name:
+        names[body.key] = name
+    else:
+        names.pop(body.key, None)
+    m.speaker_names_json = json.dumps(names, ensure_ascii=False) if names else None
+    db.commit()
 
 
 @router.post("/segments/{segment_id}/word", response_model=WordCorrectionOut)

@@ -34,6 +34,12 @@ class ReviewOut(BaseModel):
     total_doubts: int
     doubts_left: int
     segments: list[SegmentOut]
+    speakers: dict[str, str] = {}  # {"Hablante 1": "Alcalde", ...}
+
+
+class SpeakerNameIn(BaseModel):
+    key: str   # "Hablante 1"
+    name: str  # "" = quitar el nombre
 
 
 class SessionOut(BaseModel):

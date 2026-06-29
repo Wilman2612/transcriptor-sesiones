@@ -44,6 +44,9 @@ def _ensure_columns():
         cols = {r[1] for r in conn.exec_driver_sql("PRAGMA table_info(segments)")}
         if "override_text" not in cols:
             conn.exec_driver_sql("ALTER TABLE segments ADD COLUMN override_text TEXT")
+        scols = {r[1] for r in conn.exec_driver_sql("PRAGMA table_info(sessions)")}
+        if "speaker_names_json" not in scols:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN speaker_names_json TEXT")
 
 
 @asynccontextmanager

@@ -63,6 +63,14 @@ def export_transcript(session_id: int, db: DbSession, output_dir: str) -> dict[s
     segments = segment_repo.list_by_session(session_id)
     turns = _group_turns(segments, correction_repo)
 
+    # Resolver "Hablante N" -> nombre/cargo real, si se asignó
+    import json
+
+    from app.infrastructure.persistence.models import SessionModel
+    m = db.get(SessionModel, session_id)
+    names = json.loads(m.speaker_names_json) if m and m.speaker_names_json else {}
+    turns = [(names.get(speaker, speaker), text) for speaker, text in turns]
+
     fecha = _fecha_es(session.date)
     apertura = (
         f"En el salón de actos de la {MUNICIPALIDAD}, siendo el día {fecha}, "

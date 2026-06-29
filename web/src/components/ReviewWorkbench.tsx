@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { IReviewRepository } from "../lib/data/IReviewRepository";
 import type { ReviewData, Word as WordT } from "../lib/types";
 import { countDoubts } from "../lib/confidence";
+import { listGlossary } from "../lib/data/glossary";
 import { groupIntoTurns } from "../lib/turns";
 import { Turn } from "./Turn";
 import { Tally } from "./Tally";
@@ -29,6 +30,13 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
   const [editing, setEditing] = useState<Editing | null>(null);
   const [textSeg, setTextSeg] = useState<number | null>(null);
   const [reprocessing, setReprocessing] = useState<string | null>(null);
+  const [roster, setRoster] = useState<string[]>([]);
+
+  useEffect(() => {
+    listGlossary()
+      .then((ts) => setRoster(ts.filter((t) => t.kind === "persona").map((t) => t.text)))
+      .catch(() => setRoster([]));
+  }, []);
   const audioRef = useRef<HTMLAudioElement>(null);
   const stopAt = useRef<number | null>(null);
 
@@ -107,12 +115,27 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
     }
   };
 
+  const renameSpeaker = async (key: string, name: string) => {
+    await repo.setSpeakerName(review.session_id, key, name);
+    setReview((prev) => {
+      const speakers = { ...prev.speakers };
+      if (name.trim()) speakers[key] = name.trim();
+      else delete speakers[key];
+      return { ...prev, speakers };
+    });
+  };
+
   const exportDocx = () => exportUrl && window.open(exportUrl, "_blank");
   const hasDoubts = counts.total > 0;
   const allResolved = hasDoubts && counts.left === 0;
 
   return (
     <div className="desk">
+      <datalist id="speaker-roster">
+        {roster.map((r) => (
+          <option key={r} value={r} />
+        ))}
+      </datalist>
       <div className="desk__head">
         <div>
           <p className="desk__eyebrow">Acta de sesión · revisión</p>
@@ -180,6 +203,8 @@ export function ReviewWorkbench({ initial, repo, audioUrl, exportUrl, defaultThr
             threshold={threshold}
             textSegId={textSeg}
             busy={reprocessing === t.key}
+            speakerName={review.speakers[t.speaker] ?? t.speaker}
+            onRename={renameSpeaker}
             onSeek={(ms) => playRange(ms, null)}
             onPickWord={(segmentId, word, rect) => setEditing({ segmentId, word, rect })}
             onEditPhrase={(segId) => setTextSeg(segId)}

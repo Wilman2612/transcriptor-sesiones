@@ -16,6 +16,8 @@ class SessionModel(Base):
     s24_transcript_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    # JSON: {"Hablante 1": "Alcalde", "Hablante 2": "Secretaria general", ...}
+    speaker_names_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     chunks: Mapped[list["ChunkModel"]] = relationship(back_populates="session", cascade="all, delete-orphan")
     segments: Mapped[list["SegmentModel"]] = relationship(back_populates="session", cascade="all, delete-orphan")

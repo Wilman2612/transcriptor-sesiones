@@ -29,6 +29,7 @@ export interface ReviewData {
   total_doubts: number;
   doubts_left: number;
   segments: Segment[];
+  speakers: Record<string, string>; // {"Hablante 1": "Alcalde", ...}
 }
 
 export interface SessionSummary {

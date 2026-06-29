@@ -9,4 +9,6 @@ export interface IReviewRepository {
   rewriteSegment(segmentId: number, text: string): Promise<WordCorrectionResult>;
   /** Segunda pasada: re-transcribe un tramo en aislamiento y lo reemplaza. */
   reprocess(segmentIds: number[]): Promise<WordCorrectionResult>;
+  /** Asigna un nombre/cargo real a un hablante (vacío = quitar). */
+  setSpeakerName(sessionId: number, key: string, name: string): Promise<void>;
 }

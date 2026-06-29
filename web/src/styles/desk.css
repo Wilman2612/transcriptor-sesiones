@@ -415,3 +415,17 @@
 }
 .turn__reprocess:hover:not(:disabled) { background: var(--accent-soft); }
 .turn__reprocess:disabled { opacity: .6; cursor: default; }
+
+/* ── Etiqueta de hablante editable ────────────────────────────────────────────── */
+.turn__speaker-btn {
+  font-family: inherit; font-weight: 600; font-size: .82rem; color: var(--ink);
+  background: none; border: 0; padding: 0; cursor: pointer; text-align: left;
+}
+.turn__speaker-btn:hover { color: var(--accent); }
+.turn__speaker-hint { color: var(--ink-faint); font-weight: 400; }
+.speaker-edit__input {
+  font-family: 'Inter', sans-serif; font-size: .82rem; font-weight: 600; color: var(--ink);
+  border: 1px solid var(--accent); border-radius: 4px; padding: .15rem .35rem;
+  width: 11rem; max-width: 100%;
+}
+.speaker-edit__input:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
